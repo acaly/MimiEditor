@@ -117,6 +117,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ModificationTracerSpeedTest.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
     <ClCompile Include="ModificationTracerTest.cpp" />
   </ItemGroup>
   <ItemGroup>
