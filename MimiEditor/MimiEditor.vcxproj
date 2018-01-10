@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Buffer.h" />
     <ClInclude Include="CodePages.h" />
     <ClInclude Include="CommonInternal.h" />
     <ClInclude Include="Config.h" />

@@ -78,7 +78,7 @@ namespace Mimi
 		//Ensure the Pointer is unchanged
 		void RemoveRange(std::uint32_t start, std::uint32_t len)
 		{
-			std::memmove(&Pointer[start], &Pointer[start + len], len * sizeof(T));
+			std::memmove(&Pointer[start], &Pointer[start + len], (Count - start - len) * sizeof(T));
 			Count -= len;
 		}
 

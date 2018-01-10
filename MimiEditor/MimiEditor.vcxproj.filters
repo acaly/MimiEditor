@@ -33,9 +33,6 @@
     <ClInclude Include="TextSegment.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
-    <ClInclude Include="Buffer.h">
-      <Filter>Header Files\Storage</Filter>
-    </ClInclude>
     <ClInclude Include="ShortVector.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>

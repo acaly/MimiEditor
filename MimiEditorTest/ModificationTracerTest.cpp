@@ -131,17 +131,73 @@ const lest::test specification[] =
 		t.Delete(4, 1); //inside
 		t.CheckConversion();
 	},
-	CASE("Delete after insertion at beginning")
+	CASE("Delete after insertion (normal 2)")
+	{
+		ModificationTester t(lest_env, 18);
+		t.Insert(15, 3);
+		t.Insert(12, 3);
+		t.Insert(9, 3);
+		t.Insert(6, 3);
+		t.Insert(3, 3);
+		t.Delete(24, 1);
+		t.Delete(18, 1);
+		t.Delete(13, 3);
+		t.Delete(7, 3);
+		t.Delete(5, 1);
+		t.Delete(1, 2);
+		t.CheckConversion();
+	},
+	CASE("Delete after insertion (beginning)")
 	{
 		ModificationTester t(lest_env, 3);
 		t.Insert(0, 1);
 		t.Delete(1, 1);
 		t.CheckConversion();
 	},
-	//TODO ins & del sharing an edge
+	CASE("Delete after insertion (adjacent)")
+	{
+		ModificationTester t(lest_env, 18);
+		t.Insert(15, 2);
+		t.Insert(12, 2);
+		t.Insert(9, 2);
+		t.Insert(6, 2);
+		t.Insert(3, 2);
+		t.Delete(24, 1);
+		t.Delete(18, 1);
+		t.Delete(13, 3);
+		t.Delete(7, 3);
+		t.Delete(5, 1);
+		t.Delete(1, 2);
+		t.CheckConversion();
+	},
+	CASE("Delete at pair")
+	{
+		ModificationTester t(lest_env, 11);
+		t.Delete(8, 1);
+		t.Insert(8, 2);
+		t.Delete(5, 1);
+		t.Insert(5, 2);
+		t.Delete(2, 1);
+		t.Insert(2, 2);
+
+		t.Delete(12, 1);
+		t.Delete(7, 1);
+		t.Delete(1, 3);
+		t.CheckConversion();
+	},
+	CASE("Merge pairs")
+	{
+		ModificationTester t(lest_env, 8);
+		t.Insert(6, 2);
+		t.Delete(2, 2);
+		t.Insert(2, 2);
+
+		t.Delete(4, 3);
+		t.CheckConversion();
+	},
 };
 
-int main(int argc, char * argv[])
+int TestModificationTracer()
 {
 	return lest::run(specification, { "-p" }, std::cout);
 }

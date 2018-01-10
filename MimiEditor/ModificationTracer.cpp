@@ -23,7 +23,6 @@ void Mimi::ModificationTracer::Insert(std::uint32_t pos, std::uint32_t len)
 	std::int16_t change = static_cast<std::int16_t>(len);
 
 	ShortVector<Modification>& list = this->SnapshotHead->Modifications;
-	list.EnsureExtra(1); //We need to add 1 more entry. Resize now to avoid relocation.
 
 	//Find the point to insert
 	Modification* head = list.GetPointer();
@@ -66,7 +65,6 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 	std::int16_t clen = static_cast<std::int16_t>(len);
 
 	ShortVector<Modification>& list = this->SnapshotHead->Modifications;
-	list.EnsureExtra(1); //We need to add 1 more entry. Resize now to avoid relocation.
 
 	//Find the point to delete
 	Modification* head = list.GetPointer();
@@ -84,21 +82,33 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 		if (i > cpos + clen)
 		{
 			//Already after the range. Delete now.
-			list.Insert(m - head, { static_cast<std::uint16_t>(cpos - delta), -clen });
-			return;
-		}
-		if (i == cpos + clen)
-		{
-			//Right after the range, if it's also deletion, merge.
-			if (m->Change < 0)
+			//Delete skipped items if any
+			int insertPosition = m - head;
+			if (coverStart)
 			{
-				m->Change -= clen;
-				m->Position = static_cast<std::uint16_t>(cpos - delta);
+				list.RemoveRange(coverStart - head, m - coverStart);
+				insertPosition = coverStart - head;
 			}
 			else
 			{
-				//Can't merge. Just delete.
-				list.Insert(m - head, { static_cast<std::uint16_t>(cpos - delta), -clen });
+				deltaStart = delta;
+			}
+			list.Insert(insertPosition, {
+				static_cast<std::uint16_t>(cpos - deltaStart),
+				static_cast<std::int16_t>(-clen + extraChange) });
+			return;
+		}
+		if (i == cpos + clen && m->Change < 0)
+		{
+			//Right after the range, if it's also deletion, merge.
+			//Note that if it's insertion, we must wait and delete after it.
+			m->Change -= clen;
+			m->Position = static_cast<std::uint16_t>(cpos - delta);
+
+			//Delete skipped items if any
+			if (coverStart)
+			{
+				list.RemoveRange(coverStart - head, m - coverStart);
 			}
 			return;
 		}
@@ -115,8 +125,8 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 				else if (i + m->Change < cpos + clen)
 				{
 					//Start within an insert and go beyond, fix these numbers.
-					//Note that in the case it doesn't go beyond,
-					//we have next 'del is within the ins' to deal with it.
+					//Note that in the case it doesn't go beyond (the else in this if),
+					//we have next 'Within the insertion' to deal with it.
 					deltaStart = delta + (cpos - i);
 					extraChange = -(cpos - i);
 					//Update this ins and let's not remove it.
@@ -128,8 +138,9 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 			//Check if we can stop here.
 			if (m->Change > 0 && i + m->Change >= cpos + clen)
 			{
-				if (i < cpos)
+				if (i <= cpos)
 				{
+					assert(coverStart == m);
 					//Within the insertion.
 					m->Change -= clen;
 					return;
@@ -137,17 +148,68 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 				else
 				{
 					int move = cpos + clen - i;
+					int oldPosition = m->Position;
 					extraChange += move;
 					//Trim the insertion (before modifying the list).
 					m->Change -= move;
 					//Move the insertion to before this deletion.
-					m->Position -= (i - cpos);
-					//Remove those since coverStart (until the item before this one).
-					list.RemoveRange(coverStart - head, m - coverStart);
-					//Delete (+1 position to add it after the insertion originally at m)
-					list.Insert(coverStart - head + 1, {
-						static_cast<std::uint16_t>(cpos - deltaStart),
-						static_cast<std::int16_t>(-clen + extraChange) });
+					//Note that we should consider extraChange and use clen - extraChange here.
+					//  It's possible that i - cpos != clen - extraChange.
+					//  This happens when extraChange changes because of other items.
+					m->Position -= clen - extraChange;
+					//After m moves backwards, it is possible that it can be merged with
+					//another insertion. Merging with deletion is impossible because deletion
+					//is considered 'covered' and planned to be removed.
+					if (coverStart != head && coverStart[-1].Position == m->Position)
+					{
+						assert(coverStart[-1].Change > 0);
+						coverStart[-1].Change += m->Change;
+						m->Change = 0;
+						//Now let the next part deal with it
+					}
+
+					//TODO try to merge the 4 cases
+					if (m->Change == 0)
+					{
+						//There might be a deletion right after the insertion. Try to merge.
+						//Change < 0 is necessary, as the next might be the end (Change == 0).
+						if (m[1].Position == oldPosition && m[1].Change < 0)
+						{
+							m[1].Position += -clen + extraChange;
+							m[1].Change += -clen + extraChange;
+							//Remove those since coverStart. Also remove the insertion as it's zero length
+							list.RemoveRange(coverStart - head, m - coverStart + 1);
+						}
+						else
+						{
+							//Remove those since coverStart. Also remove the insertion as it's zero length
+							list.RemoveRange(coverStart - head, m - coverStart + 1);
+							list.Insert(coverStart - head, {
+								static_cast<std::uint16_t>(cpos - deltaStart),
+								static_cast<std::int16_t>(-clen + extraChange) });
+						}
+					}
+					else
+					{
+						//Delete (try to merge) 
+						if (m[1].Position == oldPosition && m[1].Change < 0)
+						{
+							//Merge before modifying the list.
+							m[1].Position += -clen + extraChange;
+							m[1].Change += -clen + extraChange;
+							//Remove those since coverStart (until the item before this one).
+							list.RemoveRange(coverStart - head, m - coverStart);
+						}
+						else
+						{
+							//Remove those since coverStart (until the item before this one).
+							list.RemoveRange(coverStart - head, m - coverStart);
+							//Delete (+1 position to add it after the insertion originally at m)
+							list.Insert(coverStart - head + 1, {
+								static_cast<std::uint16_t>(cpos - deltaStart),
+								static_cast<std::int16_t>(-clen + extraChange) });
+						}
+					}
 					return;
 				}
 			}
@@ -169,8 +231,11 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 		coverStart = m;
 		deltaStart = delta;
 	}
-	//Remove those since coverStart (until the item before this one)
-	list.RemoveRange(coverStart - head, m - coverStart);
+	else
+	{
+		//Remove those since coverStart (until the item before this one)
+		list.RemoveRange(coverStart - head, m - coverStart);
+	}
 	//Delete
 	list.Insert(coverStart - head, {
 		static_cast<std::uint16_t>(cpos - deltaStart),
