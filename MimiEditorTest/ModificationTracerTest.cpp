@@ -170,6 +170,15 @@ const lest::test specification[] =
 		t.Delete(1, 2);
 		t.CheckConversion();
 	},
+	CASE("Delete after insertion (same)")
+	{
+		ModificationTester t(lest_env, 2);
+		t.Insert(1, 1);
+		t.Insert(2, 1);
+		t.Delete(2, 1);
+		t.Delete(1, 1);
+		t.CheckConversion();
+	},
 	CASE("Delete at pair")
 	{
 		ModificationTester t(lest_env, 11);

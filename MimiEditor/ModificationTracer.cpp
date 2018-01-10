@@ -143,6 +143,10 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 					assert(coverStart == m);
 					//Within the insertion.
 					m->Change -= clen;
+					if (m->Change == 0)
+					{
+						list.RemoveAt(m - head);
+					}
 					return;
 				}
 				else
@@ -264,6 +268,7 @@ void Mimi::ModificationTracer::NewSnapshot(std::uint32_t newSnapshotNum, std::ui
 {
 	this->ExchangeFront(newSnapshotNum - 1);
 	this->SnapshotHead->Modifications.Clear();
+	//TODO shink the vector length here
 	this->SnapshotHead->Modifications.Append({ static_cast<std::uint16_t>(length), 0 });
 }
 
