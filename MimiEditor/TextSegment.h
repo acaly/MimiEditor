@@ -3,94 +3,96 @@
 #include "CommonInternal.h"
 #include "ShortVector.h"
 #include "ModificationTracer.h"
+#include "Buffer.h"
 #include <cstdint>
 #include <vector>
 
 namespace Mimi
 {
-	enum TextSegmentNewLine : std::uint8_t
-	{
-		None,
-		CRLF,
-		LF,
-	};
-
-	typedef std::uint8_t CharacterPosition;
+	typedef std::uint8_t CharacterRenderPosition;
 	typedef std::uint8_t CharacterRenderStyle;
 
 	struct PerCharacterData
 	{
-		CharacterPosition Position;
+		CharacterRenderPosition Position;
 		CharacterRenderStyle RenderStyle; //one bit for word separation?
 	};
 
-	enum LabelType : std::uint8_t
+	namespace LabelType
 	{
-		Line,
-		Point,
-		Range,
-	};
+		enum LabelTypeValues : std::uint8_t
+		{
+			Empty = 0, //not a label
 
-	struct LineLabel
-	{
-	};
+			Line = 1,
+			Point = 2,
+			RangeAny = 4, //mask only
+			RangeOpen = 5,
+			RangeClose = 6,
+			Topology = 7, //mask only
 
-	struct PointLabel
-	{
+			Left = 8,
+			Right = 16,
+			Center = 32,
+			Alignment = Left | Right | Center, //mask only
+		};
+	}
 
-	};
-
-	struct RangeLabel
-	{
-
-	};
-
+	//About Label
+	//Label is a auto-modified anchor in the TextSegment. Whenever the data is
+	//modified, the position is also modified.
+	//Labels are all stored in an array (ShortVector) in each segment. When the
+	//api user needs to obtain a reference to a label, the index in the array is
+	//returned. Given the index, the segment is able to provide the position at
+	//any time. When Labels are created and deleted, the array resizes but the
+	//existing Labels are not moved to different indexes. New Labels will be created
+	//at the vacant site if possible. This gives best performance on update and
+	//position calculation, and also minimum memory footprint, but creating new
+	//Labels might be a little bit slow (need to find a free index).
 	struct Label
 	{
-		LabelType Type;
-		union
-		{
-			LineLabel Line;
-			PointLabel Point;
-			RangeLabel Range;
-		};
+		//Tells the segment how to update the position.
+		LabelType::LabelTypeValues Type;
+		//Data defined by Handler to store additional data.
+		std::uint8_t Data;
+		//Index of Label handers (registered in the system).
+		std::uint16_t Handler;
+		//Position of the Label (updated by the segment).
+		std::uint16_t Position;
 	};
 
 	class TextSegmentList;
+
+	class ActiveTextSegmentData
+	{
+	public:
+		bool IsModifiedSinceOpen;
+		bool IsModifiedSinceSave;
+		bool IsModifiedSinceSnapshot;
+		bool IsModifiedSinceRendered;
+
+		DynamicBuffer ContentBuffer;
+		DynamicBuffer CharacterDataBuffer;
+		ShortVector<StaticBuffer> SnapshotBuffers;
+		ModificationTracer Modifications;
+	};
 
 	class TextSegment
 	{
 	public:
 		TextSegmentList* Parent;
 		std::uint8_t Index;
-
-	public:
-		TextSegmentNewLine NewLine;
-
 		bool IsContinuous;
-		bool IsModifiedSinceOpen;
-		bool IsModifiedSinceSave;
-		bool IsModifiedSinceSnapshot;
-		bool IsModifiedSinceRendered;
-
-		bool IsContentGlobalStorage;
-		bool IsSnapshotGlobalStorage;
 
 	public:
-		std::uint16_t ContentBufferSize;
-		std::uint16_t SnapshotBufferSize;
-		std::uint16_t CharacterDataBufferSize;
-		std::uint8_t* ContentBuffer;
-		std::uint8_t* SnapshotBuffer;
-		PerCharacterData* CharacterDataBuffer;
+		StaticBuffer ContentBuffer;
+		StaticBuffer CharacterDataBuffer;
+		ActiveTextSegmentData* ActiveData;
 
 	public:
 		ShortVector<Label> Labels;
 
-	public:
-		ModificationTracer Modifications; //Traces bytes or chars?
-
-		//change event?
 		//render cache?
+		//render height?
 	};
 }

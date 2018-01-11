@@ -39,6 +39,9 @@
     <ClInclude Include="ModificationTracer.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp">
