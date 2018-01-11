@@ -356,12 +356,15 @@ std::uint32_t Mimi::ModificationTracer::ConvertFromSnapshotSingle(Snapshot* snap
 std::uint32_t Mimi::ModificationTracer::FirstModifiedFromSnapshot(std::uint32_t snapshot)
 {
 	Snapshot* s = this->SnapshotHead;
-	int pos = s->Modifications[0].Position;
+	int pos = PositionDeleted;
 	s = s->Next;
 	for (std::uint32_t i = 1; i < snapshot; ++i)
 	{
-		int newPos = s->Modifications[0].Position;
-		if (newPos < pos) pos = newPos;
+		if (s->Modifications[0].Change != 0)
+		{
+			int newPos = s->Modifications[0].Position;
+			if (pos == PositionDeleted || newPos < pos) pos = newPos;
+		}
 		s = s->Next;
 	}
 	return pos;
