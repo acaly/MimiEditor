@@ -70,7 +70,7 @@ public:
 
 	void Split(int pos, ModificationTester& other)
 	{
-		Tracer.Split(1, pos, other.Tracer);
+		Tracer.SplitInto(other.Tracer, 1, pos);
 		other.Items.clear();
 		int offset = -1;
 		for (int i = pos; i < Items.size(); ++i)
