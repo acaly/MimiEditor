@@ -2,5 +2,5 @@
 
 int main()
 {
-	return TestModificationTracerSpeed();
+	return TestModificationTracer();
 }

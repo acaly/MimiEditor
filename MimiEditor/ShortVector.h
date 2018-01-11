@@ -3,7 +3,6 @@
 #include "CommonInternal.h"
 #include <cstdint>
 #include <type_traits>
-#include <new>
 #include <cstring>
 #include <cassert>
 
@@ -40,7 +39,14 @@ namespace Mimi
 		void Append(T&& val)
 		{
 			EnsureExtra(1);
-			new(&Pointer[Count++]) T(val);
+			Pointer[Count++] = val;
+		}
+
+		void ApendRange(T* data, std::uint32_t num)
+		{
+			EnsureExtra(num);
+			std::memcpy(&Pointer[Count], data, num * sizeof(T));
+			Count += num;
 		}
 
 		void Insert(std::uint32_t pos, T&& val)
@@ -48,7 +54,7 @@ namespace Mimi
 			EnsureExtra(1);
 			assert(pos <= Count && "ShortVector: insert after the end.");
 			std::memmove(&Pointer[pos + 1], &Pointer[pos], (Count - pos) * sizeof(T));
-			new(&Pointer[pos]) T(val);
+			Pointer[pos] = val;
 			Count += 1;
 		}
 
@@ -78,6 +84,7 @@ namespace Mimi
 		//Ensure the Pointer is unchanged
 		void RemoveRange(std::uint32_t start, std::uint32_t len)
 		{
+			assert(start + len <= Count);
 			std::memmove(&Pointer[start], &Pointer[start + len], (Count - start - len) * sizeof(T));
 			Count -= len;
 		}
@@ -87,14 +94,32 @@ namespace Mimi
 			RemoveRange(pos, 1);
 		}
 
-		T* GetPointer()
-		{
-			return Pointer;
-		}
-
 		void Clear()
 		{
 			Count = 0;
+		}
+
+		void Shink(std::uint32_t capacity)
+		{
+			if (capacity >= Count)
+			{
+				assert(capacity > 0);
+				T* newPointer = new T[capacity];
+				std::memcpy(newPointer, Pointer, Count * sizeof(T));
+				delete[] Pointer;
+				Pointer = newPointer;
+				Capacity = capacity;
+			}
+		}
+
+		void Shink()
+		{
+			Shink(Count);
+		}
+
+		T* GetPointer()
+		{
+			return Pointer;
 		}
 
 		std::uint32_t GetCount()

@@ -68,6 +68,31 @@ public:
 		}
 	}
 
+	void Split(int pos, ModificationTester& other)
+	{
+		Tracer.Split(1, pos, other.Tracer);
+		other.Items.clear();
+		int offset = -1;
+		for (int i = pos; i < Items.size(); ++i)
+		{
+			if (offset == -1 && Items[i] != -1)
+			{
+				offset = Items[i];
+			}
+			other.Items.push_back(Items[i] - (offset == -1 || Items[i] == -1 ? 0 : offset));
+		}
+		Items.erase(Items.begin() + pos, Items.end());
+		if (offset == -1)
+		{
+			other.InitialSize = 0;
+		}
+		else
+		{
+			other.InitialSize = InitialSize - offset;
+			InitialSize = offset;
+		}
+	}
+
 private:
 	int InitialSize;
 	ModificationTracer Tracer;
@@ -77,32 +102,32 @@ private:
 
 const lest::test specification[] =
 {
-	CASE("Single insertion")
+	CASE("Insert simple")
 	{
 		ModificationTester t(lest_env, 4);
 		t.Insert(2, 2);
 		t.CheckConversion();
 	},
-	CASE("Single deletion")
+	CASE("Delete simple")
 	{
 		ModificationTester t(lest_env, 6);
 		t.Delete(2, 2);
 		t.CheckConversion();
 	},
-	CASE("Deletion at beginning")
+	CASE("Delete at beginning")
 	{
 		ModificationTester t(lest_env, 6);
 		t.Delete(0, 2);
 		t.CheckConversion();
 	},
-	CASE("Insertion with delta")
+	CASE("Insert with delta")
 	{
 		ModificationTester t(lest_env, 4);
 		t.Insert(0, 1);
 		t.Insert(2, 2);
 		t.CheckConversion();
 	},
-	CASE("Deletion with delta")
+	CASE("Delete with delta")
 	{
 		ModificationTester t(lest_env, 6);
 		t.Insert(0, 1);
@@ -194,7 +219,7 @@ const lest::test specification[] =
 		t.Delete(1, 3);
 		t.CheckConversion();
 	},
-	CASE("Merge pairs")
+	CASE("Delete merging pairs")
 	{
 		ModificationTester t(lest_env, 8);
 		t.Insert(6, 2);
@@ -203,6 +228,62 @@ const lest::test specification[] =
 
 		t.Delete(4, 3);
 		t.CheckConversion();
+	},
+	CASE("Split empty")
+	{
+		ModificationTester t1(lest_env, 4);
+		ModificationTester t2(lest_env, 0);
+		t1.Split(2, t2);
+		t1.CheckConversion();
+		t2.CheckConversion();
+	},
+	CASE("Split insertion")
+	{
+		ModificationTester t1(lest_env, 4);
+		ModificationTester t2(lest_env, 0);
+		t1.Insert(1, 2);
+		t1.Insert(5, 2);
+		t1.Split(4, t2);
+		t1.CheckConversion();
+		t2.CheckConversion();
+	},
+	CASE("Split deletion")
+	{
+		ModificationTester t1(lest_env, 8);
+		ModificationTester t2(lest_env, 0);
+		t1.Delete(5, 2);
+		t1.Delete(1, 2);
+		t1.Split(2, t2);
+		t1.CheckConversion();
+		t2.CheckConversion();
+	},
+	CASE("Split inside insertion")
+	{
+		ModificationTester t1(lest_env, 4);
+		ModificationTester t2(lest_env, 0);
+		t1.Insert(2, 2);
+		t1.Split(3, t2);
+		t1.CheckConversion();
+		t2.CheckConversion();
+	},
+	CASE("Split at deletion")
+	{
+		ModificationTester t1(lest_env, 6);
+		ModificationTester t2(lest_env, 0);
+		t1.Delete(2, 2);
+		t1.Split(2, t2);
+		t1.CheckConversion();
+		t2.CheckConversion();
+	},
+	CASE("Split at pair")
+	{
+		ModificationTester t1(lest_env, 6);
+		ModificationTester t2(lest_env, 0);
+		t1.Delete(2, 2);
+		t1.Insert(2, 2);
+		t1.Split(4, t2);
+		t1.CheckConversion();
+		t2.CheckConversion();
 	},
 };
 

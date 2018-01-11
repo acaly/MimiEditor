@@ -69,9 +69,9 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 	//Find the point to delete
 	Modification* head = list.GetPointer();
 	Modification* m = head;
+	Modification* coverStart = nullptr;
 	int delta = 0;
 	int deltaStart = 0;
-	Modification* coverStart = nullptr;
 	int extraChange = 0;
 
 	while (m->Change) //Not the last
@@ -268,7 +268,7 @@ void Mimi::ModificationTracer::NewSnapshot(std::uint32_t newSnapshotNum, std::ui
 {
 	this->ExchangeFront(newSnapshotNum - 1);
 	this->SnapshotHead->Modifications.Clear();
-	//TODO shink the vector length here
+	this->SnapshotHead->Modifications.Shink(2);
 	this->SnapshotHead->Modifications.Append({ static_cast<std::uint16_t>(length), 0 });
 }
 
@@ -365,6 +365,144 @@ std::uint32_t Mimi::ModificationTracer::FirstModifiedFromSnapshot(std::uint32_t 
 		s = s->Next;
 	}
 	return pos;
+}
+
+void Mimi::ModificationTracer::MergeWith(ModificationTracer& other, std::uint32_t snapshots)
+{
+	Snapshot* sa = this->SnapshotHead;
+	Snapshot* sb = other.SnapshotHead;
+	for (std::uint32_t i = 0; i < snapshots; ++i)
+	{
+		//Find the offset for b
+		Modification* ma = sa->Modifications.GetPointer();
+		while (ma->Change) ma += 1;
+		std::uint16_t offset = ma->Position;
+
+		//Update the position for b
+		Modification* mb = sb->Modifications.GetPointer();
+		while (mb->Change)
+		{
+			mb->Position += offset;
+		}
+		mb->Position += offset;
+
+		//Copy data from b
+		sa->Modifications.ApendRange(sb->Modifications.GetPointer(), sb->Modifications.GetCount());
+
+		//Merge next snapshot
+		sa = sa->Next;
+		sb = sb->Next;
+	}
+}
+
+void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::uint32_t snapshots, std::uint32_t pos)
+{
+	Snapshot* sa = this->SnapshotHead;
+	Snapshot* sb = other.SnapshotHead;
+	int p = static_cast<int>(pos);
+
+	for (std::uint32_t i = 0; i < snapshots; ++i)
+	{
+		sb->Modifications.Clear();
+
+		Modification* heada = sa->Modifications.GetPointer();
+		Modification* ma = heada;
+		int delta = 0;
+		while (true)
+		{
+			int i = ma->Position + delta;
+			if (ma->Change == 0)
+			{
+				//Split after any change.
+				int keep = p - delta;
+				int move = ma->Position - keep;
+				assert(move > 0 && "ModificationTracer: split after end.");
+				ma->Position -= move;
+				sb->Modifications.Append({ static_cast<std::uint16_t>(move), 0 });
+				p = keep;
+				break;
+			}
+			else if (ma->Change > 0)
+			{
+				if (i >= p)
+				{
+					//Split before an insertion
+					int keep = p - delta;
+
+					//Modify the second part and find the count
+					Modification* e = ma;
+					while (e->Change)
+					{
+						e->Position -= keep;
+						e += 1;
+					}
+					e->Position -= keep; //The last item.
+
+					sb->Modifications.ApendRange(ma, e + 1 - ma); //Move
+					sa->Modifications.RemoveRange(ma - heada, e + 1 - ma);
+					sa->Modifications.Append({ static_cast<std::uint16_t>(keep), 0 }); //End sa
+					p = keep;
+					break;
+				}
+				else if (i + ma->Change > p)
+				{
+					//Split inside an insertion
+					int move = i + ma->Change - p;
+					int keep = ma->Position;
+
+					//Modify the second part and find the count
+					Modification* e = ma + 1; //skip ma
+					while (e->Change)
+					{
+						e->Position -= keep;
+						e += 1;
+					}
+					e->Position -= keep;
+
+					sb->Modifications.Append({ 0, static_cast<std::int16_t>(move) }); //Split the insertion
+					sb->Modifications.ApendRange(ma + 1, e - ma); //Move
+					ma->Change -= move; //Split the insertion
+					sa->Modifications.RemoveRange(ma + 1 - heada, e - ma);
+					sa->Modifications.Append({ static_cast<std::uint16_t>(keep), 0 }); //End sa
+					p = keep;
+					break;
+				}
+			}
+			else //ma->Change < 0
+			{
+				if (i > p)
+				{
+					//Split before an deletion (same as before insertion)
+					int keep = p - delta;
+
+					//Modify the second part and find the count
+					Modification* e = ma;
+					while (e->Change)
+					{
+						e->Position -= keep;
+						e += 1;
+					}
+					e->Position -= keep; //The last item.
+
+					sb->Modifications.ApendRange(ma, e + 1 - ma); //Move
+					sa->Modifications.RemoveRange(ma - heada, e + 1 - ma);
+					sa->Modifications.Append({ static_cast<std::uint16_t>(keep), 0 }); //End sa
+					p = keep;
+					break;
+				}
+			}
+
+			delta += ma->Change;
+			ma += 1;
+		}
+
+		//Try to make it smaller.
+		sb->Modifications.Shink();
+
+		//Merge next snapshot.
+		sa = sa->Next;
+		sb = sb->Next;
+	}
 }
 
 bool Mimi::ModificationTracer::CheckSequence(std::uint32_t numSnapshot, std::uint32_t rangeCheck)

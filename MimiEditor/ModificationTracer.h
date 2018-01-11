@@ -18,7 +18,6 @@ namespace Mimi
 	//time allowing temporarily increasing to 2 (or even more) snapshots, the
 	//linked list is used here, although changing the size requires exchange of
 	//nodes.
-	//Dir
 	class ModificationTracer final
 	{
 	public:
@@ -26,18 +25,6 @@ namespace Mimi
 		ModificationTracer(const ModificationTracer&) = delete;
 		ModificationTracer(ModificationTracer&&) = delete;
 		~ModificationTracer();
-
-	public:
-		void Insert(std::uint32_t pos, std::uint32_t len);
-		void Delete(std::uint32_t pos, std::uint32_t len);
-
-	private:
-		void ExchangeFront(std::uint32_t oldNum);
-
-	public:
-		void NewSnapshot(std::uint32_t newSnapshotNum, std::uint32_t length);
-		void DisposeSnapshot(std::uint32_t oldNum, std::uint32_t num);
-		void Resize(std::uint32_t newCapacity);
 
 	private:
 		struct Modification
@@ -57,6 +44,21 @@ namespace Mimi
 
 		Snapshot* SnapshotHead;
 
+	public:
+		static const std::uint32_t PositionDeleted = 0xFFFFFFFF;
+
+	public:
+		void Insert(std::uint32_t pos, std::uint32_t len);
+		void Delete(std::uint32_t pos, std::uint32_t len);
+
+	private:
+		void ExchangeFront(std::uint32_t oldNum);
+
+	public:
+		void NewSnapshot(std::uint32_t newSnapshotNum, std::uint32_t length);
+		void DisposeSnapshot(std::uint32_t oldNum, std::uint32_t num);
+		void Resize(std::uint32_t newCapacity);
+
 	private:
 		std::uint32_t ConvertFromSnapshotSingle(Snapshot* snapshot, std::uint32_t pos, int dir);
 		std::uint32_t ConvertToSnapshotSingle(Snapshot* snapshot, std::uint32_t pos, int dir);
@@ -68,12 +70,11 @@ namespace Mimi
 			if (nsnapshot == 0) return pos;
 			if (nsnapshot == 1) return ConvertFromSnapshotSingle(snapshot, pos, dir);
 			auto remaining = ConvertFromSnapshotInternal(snapshot->Next, nsnapshot - 1, pos, dir);
+			if (remaining == PositionDeleted) return PositionDeleted;
 			return ConvertFromSnapshotSingle(snapshot, remaining, dir);
 		}
 
 	public:
-		static const std::uint32_t PositionDeleted = 0xFFFFFFFF;
-
 		//pos: attached character
 		//dir: attached side.
 		//  -1 to attach to left (move right when deleted)
@@ -91,7 +92,7 @@ namespace Mimi
 		std::uint32_t ConvertToSnapshot(std::uint32_t snapshot, std::uint32_t pos, int dir)
 		{
 			auto newPos = ConvertToSnapshotSingle(SnapshotHead, pos, dir);
-			if (snapshot == 0)
+			if (snapshot == 0 || newPos == PositionDeleted)
 			{
 				return newPos;
 			}
@@ -99,12 +100,26 @@ namespace Mimi
 			for (std::uint32_t i = 0; i < snapshot; ++i)
 			{
 				newPos = ConvertToSnapshotSingle(s, newPos, dir);
+				if (newPos == PositionDeleted) return PositionDeleted;
 				s = s->Next;
 			}
 			return newPos;
 		}
 
 		std::uint32_t FirstModifiedFromSnapshot(std::uint32_t snapshot);
+
+	public:
+		//Merge this tracer with 'other'.
+		//All snapshots are merged (number given in 'snapshot'). After this, 'other' can be
+		//deleted without losing any information.
+		void MergeWith(ModificationTracer& other, std::uint32_t snapshots);
+
+		//Split this tracer at position given in 'pos'. The data after this position is
+		//transfered to 'other' (must be initialized with proper capacity before calling this
+		//function). All snapshots are split at proper position.
+		//Note that the initialization of 'other' is capacity (by Resize), not number of
+		//snapshots. Snapshot items will be modified from the beginning.
+		void SplitInto(ModificationTracer& other, std::uint32_t snapshots, std::uint32_t pos);
 
 	public:
 		//Used in test and debug cases only.
