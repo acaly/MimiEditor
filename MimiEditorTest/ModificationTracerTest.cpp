@@ -73,7 +73,7 @@ public:
 		Tracer.SplitInto(other.Tracer, 1, pos);
 		other.Items.clear();
 		int offset = -1;
-		for (int i = pos; i < Items.size(); ++i)
+		for (int i = pos; i < (int)Items.size(); ++i)
 		{
 			if (offset == -1 && Items[i] != -1)
 			{

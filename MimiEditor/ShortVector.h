@@ -20,8 +20,9 @@ namespace Mimi
 			Count = Capacity = 0;
 		}
 
-		ShortVector(ShortVector<T>&&) = delete;
 		ShortVector(const ShortVector<T>&) = delete;
+		ShortVector(ShortVector<T>&&) = delete;
+		ShortVector<T>& operator= (const ShortVector<T>&) = delete;
 
 		~ShortVector()
 		{

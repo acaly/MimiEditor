@@ -46,9 +46,10 @@ namespace Mimi
 	//returned. Given the index, the segment is able to provide the position at
 	//any time. When Labels are created and deleted, the array resizes but the
 	//existing Labels are not moved to different indexes. New Labels will be created
-	//at the vacant site if possible. This gives best performance on update and
+	//at the vacant slot if possible. This gives best performance on update and
 	//position calculation, and also minimum memory footprint, but creating new
-	//Labels might be a little bit slow (need to find a free index).
+	//Labels might be a little bit slow (need to find a free slot).
+	//As an optimization, slot 0 and 1 are always reserved for cursor.
 	struct Label
 	{
 		//Tells the segment how to update the position.
@@ -70,6 +71,8 @@ namespace Mimi
 		bool IsModifiedSinceSave;
 		bool IsModifiedSinceSnapshot;
 		bool IsModifiedSinceRendered;
+
+		int LastModifiedTime;
 
 		DynamicBuffer ContentBuffer;
 		DynamicBuffer CharacterDataBuffer;

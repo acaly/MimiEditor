@@ -24,6 +24,7 @@ namespace Mimi
 		ModificationTracer();
 		ModificationTracer(const ModificationTracer&) = delete;
 		ModificationTracer(ModificationTracer&&) = delete;
+		ModificationTracer& operator= (const ModificationTracer&) = delete;
 		~ModificationTracer();
 
 	private:
