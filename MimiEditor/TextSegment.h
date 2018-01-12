@@ -9,13 +9,9 @@
 
 namespace Mimi
 {
-	typedef std::uint8_t CharacterRenderPosition;
-	typedef std::uint8_t CharacterRenderStyle;
-
 	struct PerCharacterData
 	{
-		CharacterRenderPosition Position;
-		CharacterRenderStyle RenderStyle; //one bit for word separation?
+		std::uint8_t RenderWidth;
 	};
 
 	namespace LabelType
@@ -29,12 +25,16 @@ namespace Mimi
 			RangeAny = 4, //mask only
 			RangeOpen = 5,
 			RangeClose = 6,
+			Reserve = 7,
 			Topology = 7, //mask only
 
 			Left = 8,
 			Right = 16,
 			Center = 32,
 			Alignment = Left | Right | Center, //mask only
+
+			Continuous = 64,
+			Unfinished = 128,
 		};
 	}
 
@@ -50,18 +50,31 @@ namespace Mimi
 	//position calculation, and also minimum memory footprint, but creating new
 	//Labels might be a little bit slow (need to find a free slot).
 	//As an optimization, slot 0 and 1 are always reserved for cursor.
-	struct Label
+	struct LabelData
 	{
 		//Tells the segment how to update the position.
-		LabelType::LabelTypeValues Type;
+		std::uint8_t Type;
 		//Data defined by Handler to store additional data.
 		std::uint8_t Data;
 		//Index of Label handers (registered in the system).
+		//For continuous flag, this is the index of previous label.
 		std::uint16_t Handler;
 		//Position of the Label (updated by the segment).
 		std::uint16_t Position;
 	};
 
+	struct Label
+	{
+		std::uint8_t Topology;
+		std::uint8_t Data;
+		std::uint16_t Handler;
+		std::uint16_t Position1;
+		std::uint16_t Position2;
+		bool IsContinuous;
+		bool IsUnfinished;
+	};
+	
+	class Document;
 	class TextSegmentList;
 
 	class ActiveTextSegmentData
@@ -72,7 +85,7 @@ namespace Mimi
 		bool IsModifiedSinceSnapshot;
 		bool IsModifiedSinceRendered;
 
-		int LastModifiedTime;
+		std::uint32_t LastModifiedTime;
 
 		DynamicBuffer ContentBuffer;
 		DynamicBuffer CharacterDataBuffer;
@@ -83,19 +96,76 @@ namespace Mimi
 	class TextSegment
 	{
 	public:
-		TextSegmentList* Parent;
-		std::uint8_t Index;
-		bool IsContinuous;
+		TextSegment(StaticBuffer buffer);
 
-	public:
+		TextSegment(const TextSegment&) = delete;
+		TextSegment(TextSegment&&) = delete;
+		TextSegment& operator= (const TextSegment&) = delete;
+
+		~TextSegment();
+
+	private:
+		TextSegmentList* Parent;
+		std::uint16_t Index;
+		bool IsContinuous;
+		bool IsUnfinished;
+
+	private:
 		StaticBuffer ContentBuffer;
 		StaticBuffer CharacterDataBuffer;
 		ActiveTextSegmentData* ActiveData;
 
-	public:
-		ShortVector<Label> Labels;
+	private:
+		ShortVector<LabelData> Labels;
 
 		//render cache?
 		//render height?
+
+	public:
+		TextSegmentList* GetParent();
+		std::uint16_t GetIndexInList();
+		TextSegment* GetPreviousSegment();
+		TextSegment* GetNextSegment();
+		bool IsContinuous();
+		bool IsUnfinished();
+		Document* GetDocument();
+		std::uint32_t GetLineNumber();
+
+	private:
+		void MakeDynamic();
+		void MakeStatic();
+		void SplitLeft(std::uint32_t pos);
+		void SplitRight(std::uint32_t pos);
+		void MergeWithLeft();
+		void MergeWithRight();
+
+	public:
+		//Replace text within the range given by a label. New content is given in a buffer.
+		//The label parameter can be either a point or range label. If the label is point,
+		//it is moved to where the replace ends. If it is range, it is updated to cover the
+		//whole content or changed to a point label depending on the option parameter.
+		//Use null buffer pointer to delete text.
+		//Return the position after the inserted content.
+		std::uint32_t ReplaceText(std::uint32_t labelSelection, DynamicBuffer* content,
+			bool collapseLabel);
+		void CheckAndMakeStatic(std::uint32_t time);
+
+	public:
+		StaticBuffer MakeSnapshot();
+		void DisposeSnapshot(std::uint32_t id);
+		std::uint32_t ConvertSnapshotPosition(std::uint32_t pos);
+
+	public:
+		std::uint32_t AddLineLabel(std::uint32_t handler, std::uint8_t data, bool continuous);
+		std::uint32_t AddPointLabel(std::uint32_t pos, std::uint32_t handler, std::uint8_t data,
+			bool continuous);
+		std::uint32_t AddRangeLabel(std::uint32_t pos1, std::uint32_t pos2, std::uint32_t handler,
+			std::uint8_t data, bool continuous);
+		void RemoveLabel(std::uint32_t id);
+		void GetLabel(std::uint32_t id, Label* result);
+		//enumerate label
+
+	public:
+		//enumerate char
 	};
 }
