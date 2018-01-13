@@ -4,8 +4,12 @@
 
 namespace Mimi
 {
+	class DynamicBuffer;
+
 	struct StaticBuffer
 	{
+		friend class DynamicBuffer;
+
 	private:
 		struct StaticBufferData
 		{
@@ -16,29 +20,75 @@ namespace Mimi
 
 		StaticBufferData* Data;
 
+		static StaticBufferData* AllocateData(std::uint32_t size)
+		{
+			char* data = new char[sizeof(StaticBufferData) + size - 2];
+			StaticBufferData* ptr = reinterpret_cast<StaticBufferData*>(data);
+			return ptr;
+		}
+
 	public:
 		void IncreaseRef()
 		{
+			assert(Data);
 			Data->RefCount += 1;
 		}
 
 		void DecreaseRef()
 		{
+			assert(Data);
 			if (--Data->RefCount == 0)
 			{
-				delete Data;
+				delete[] reinterpret_cast<char*>(Data);
 			}
+		}
+
+		void TryDecreaseRef()
+		{
+			if (Data)
+			{
+				DecreaseRef();
+			}
+		}
+
+		StaticBuffer NewRef()
+		{
+			IncreaseRef();
+			return *this;
+		}
+
+		void ClearRef()
+		{
+			assert(Data);
+			if (--Data->RefCount == 0)
+			{
+				delete[] reinterpret_cast<char*>(Data);
+			}
+			Clear();
 		}
 
 	public:
 		std::uint16_t GetSize()
 		{
+			assert(Data);
 			return Data->Size;
 		}
 
 		const std::uint8_t* GetRawData()
 		{
+			assert(Data);
 			return Data->RawData;
+		}
+
+	public:
+		void Clear()
+		{
+			Data = nullptr;
+		}
+
+		bool IsNull()
+		{
+			return Data != nullptr;
 		}
 	};
 
@@ -117,6 +167,26 @@ namespace Mimi
 				std::memcpy(buffer, Pointer, copyLen);
 			}
 			return copyLen;
+		}
+
+		StaticBuffer MakeStaticBuffer()
+		{
+			assert(!IsFastMode); //TODO
+			StaticBuffer::StaticBufferData* ptr = StaticBuffer::AllocateData(Length);
+			ptr->RefCount = 1;
+			ptr->Size = Length;
+			if (IsExternalBuffer)
+			{
+				std::memcpy(ptr->RawData, ExternalBuffer.GetRawData(), Length);
+			}
+			else
+			{
+				std::memcpy(ptr->RawData, Pointer, Length);
+			}
+
+			StaticBuffer ret;
+			ret.Data = ptr;
+			return ret;
 		}
 
 	private:

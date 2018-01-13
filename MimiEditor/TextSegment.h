@@ -9,10 +9,9 @@
 
 namespace Mimi
 {
-	struct PerCharacterData
-	{
-		std::uint8_t RenderWidth;
-	};
+	class Document;
+	class TextSegmentList;
+	class TextSegmentRenderCache;
 
 	namespace LabelType
 	{
@@ -25,16 +24,18 @@ namespace Mimi
 			RangeAny = 4, //mask only
 			RangeOpen = 5,
 			RangeClose = 6,
-			Reserve = 7,
+			Removed = 7,
 			Topology = 7, //mask only
 
 			Left = 8,
 			Right = 16,
-			Center = 32,
+			Center = 24,
 			Alignment = Left | Right | Center, //mask only
 
-			Continuous = 64,
-			Unfinished = 128,
+			Continuous = 32,
+			Unfinished = 64,
+
+			Referred = 128,
 		};
 	}
 
@@ -61,42 +62,107 @@ namespace Mimi
 		std::uint16_t Handler;
 		//Position of the Label (updated by the segment).
 		std::uint16_t Position;
+
+		//TODO:
+		//Allow larger data to be stored for some labels.
+		//  Can be achieved by adding a following LabelData struct
+		//  (6 bytes additional data).
+		//  Compress the Type enum and give another flag for this.
+		//Allow faster lookup for continuous label.
+		//  Because continuous must be range. We can use other
+		//  fields in the pair to store the backward reference.
 	};
 
-	struct Label
+	class LabelOwnerChangeEvent
 	{
-		std::uint8_t Topology;
-		std::uint8_t Data;
-		std::uint16_t Handler;
-		std::uint16_t Position1;
-		std::uint16_t Position2;
-		bool IsContinuous;
-		bool IsUnfinished;
+		friend class TextSegment;
+	private:
+		TextSegment* OldOwner;
+		TextSegment* NewOwner;
+		std::uint32_t BeginPosition;
+		std::uint32_t EndPositon;
 	};
-	
-	class Document;
-	class TextSegmentList;
 
-	class ActiveTextSegmentData
+	struct ModifiedFlag
 	{
 	public:
-		bool IsModifiedSinceOpen;
-		bool IsModifiedSinceSave;
-		bool IsModifiedSinceSnapshot;
-		bool IsModifiedSinceRendered;
+		const std::uint8_t Open = 1, Save = 2, Snapshot = 4, Render = 8;
+		const std::uint8_t ModifyMask = Open | Save | Snapshot | Render;
 
+	public:
+		std::uint8_t Value;
+
+	public:
+		void Modify()
+		{
+			Value |= ModifyMask;
+		}
+
+		bool SinceOpen() { return Value | Open; }
+		bool SinceSave() { return Value | Save; }
+		bool SinceSnapshot() { return Value | Snapshot; }
+		bool SinceRender() { return Value | Render; }
+	};
+
+	struct ContinuousFlag
+	{
+	public:
+		ContinuousFlag() = default;
+		ContinuousFlag(bool continuous, bool unfinished)
+		{
+			Value = 0;
+			SetContinuous(continuous);
+			SetUnfinished(unfinished);
+		}
+
+	public:
+		const std::uint8_t Continuous = 1, Unfinished = 2;
+
+	public:
+		std::uint8_t Value;
+
+	public:
+		bool IsContinuous() { return Value | Continuous; }
+		bool IsUnfinished() { return Value | Unfinished; }
+		void SetContinuous(bool val)
+		{
+			Value = (Value & ~Continuous) | (val << 0);
+		}
+		void SetUnfinished(bool val)
+		{
+			Value = (Value & ~Unfinished) | (val << 1);
+		}
+	};
+
+	class ActiveTextSegmentData final
+	{
+	public:
+		ActiveTextSegmentData(StaticBuffer content)
+			: ContentBuffer(content)
+		{
+			LastModifiedTime = 0xFFFFFFFF;
+			SnapshotCache = content.NewRef();
+		}
+
+		~ActiveTextSegmentData()
+		{
+			SnapshotCache.ClearRef();
+		}
+
+	public:
 		std::uint32_t LastModifiedTime;
 
 		DynamicBuffer ContentBuffer;
-		DynamicBuffer CharacterDataBuffer;
-		ShortVector<StaticBuffer> SnapshotBuffers;
+		StaticBuffer SnapshotCache;
 		ModificationTracer Modifications;
 	};
 
-	class TextSegment
+	class TextSegment final
 	{
+		friend class TextSegmentList;
+
 	public:
-		TextSegment(StaticBuffer buffer);
+		TextSegment(DynamicBuffer& buffer, bool continuous, bool unfinished);
 
 		TextSegment(const TextSegment&) = delete;
 		TextSegment(TextSegment&&) = delete;
@@ -107,27 +173,50 @@ namespace Mimi
 	private:
 		TextSegmentList* Parent;
 		std::uint16_t Index;
-		bool IsContinuous;
-		bool IsUnfinished;
 
-	private:
+		ContinuousFlag Continuous;
+		ModifiedFlag Modified;
+
 		StaticBuffer ContentBuffer;
-		StaticBuffer CharacterDataBuffer;
-		ActiveTextSegmentData* ActiveData;
-
-	private:
 		ShortVector<LabelData> Labels;
 
-		//render cache?
+		ActiveTextSegmentData* ActiveData;
+		TextSegmentRenderCache* RenderCache;
 		//render height?
 
+	private:
+		void AddToList(TextSegmentList* list, std::uint32_t index)
+		{
+			assert(Parent == nullptr);
+			assert(list != nullptr);
+			Parent = list;
+			Index = index;
+		}
+
 	public:
-		TextSegmentList* GetParent();
-		std::uint16_t GetIndexInList();
+		TextSegmentList* GetParent()
+		{
+			return Parent;
+		}
+
+		std::uint16_t GetIndexInList()
+		{
+			return Index;
+		}
+
 		TextSegment* GetPreviousSegment();
 		TextSegment* GetNextSegment();
-		bool IsContinuous();
-		bool IsUnfinished();
+
+		bool IsContinuous()
+		{
+			return Continuous.IsContinuous();
+		}
+
+		bool IsUnfinished()
+		{
+			return Continuous.IsUnfinished();
+		}
+
 		Document* GetDocument();
 		std::uint32_t GetLineNumber();
 
@@ -148,21 +237,26 @@ namespace Mimi
 		//Return the position after the inserted content.
 		std::uint32_t ReplaceText(std::uint32_t labelSelection, DynamicBuffer* content,
 			bool collapseLabel);
+		void MarkModified(std::uint32_t time);
 		void CheckAndMakeStatic(std::uint32_t time);
+
+	public:
+		TextSegmentRenderCache* GetRenderCache();
+		void DisposeRenderCache();
 
 	public:
 		StaticBuffer MakeSnapshot();
 		void DisposeSnapshot(std::uint32_t id);
 		std::uint32_t ConvertSnapshotPosition(std::uint32_t pos);
 
-	public:
-		std::uint32_t AddLineLabel(std::uint32_t handler, std::uint8_t data, bool continuous);
-		std::uint32_t AddPointLabel(std::uint32_t pos, std::uint32_t handler, std::uint8_t data,
-			bool continuous);
+	public: //TODO consider separating to new class
+		std::uint32_t AddLineLabel(std::uint32_t handler, std::uint8_t data);
+		std::uint32_t AddPointLabel(std::uint32_t pos, std::uint32_t handler, std::uint8_t data);
 		std::uint32_t AddRangeLabel(std::uint32_t pos1, std::uint32_t pos2, std::uint32_t handler,
 			std::uint8_t data, bool continuous);
 		void RemoveLabel(std::uint32_t id);
-		void GetLabel(std::uint32_t id, Label* result);
+		void GetLabel(std::uint32_t id /*, Label* result*/); //TODO support continuous
+		void NotifyLabelOwnerChange(); //TODO
 		//enumerate label
 
 	public:

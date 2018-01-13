@@ -26,10 +26,13 @@
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
     <ClInclude Include="TextSegment.h" />
+    <ClInclude Include="TextSegmentList.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
+    <ClCompile Include="TextSegment.cpp" />
+    <ClCompile Include="TextSegmentList.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

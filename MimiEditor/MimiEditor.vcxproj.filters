@@ -42,12 +42,21 @@
     <ClInclude Include="Buffer.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
+    <ClInclude Include="TextSegmentList.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp">
       <Filter>Source Files\Storage</Filter>
     </ClCompile>
     <ClCompile Include="ModificationTracer.cpp">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="TextSegment.cpp">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="TextSegmentList.cpp">
       <Filter>Source Files\Storage</Filter>
     </ClCompile>
   </ItemGroup>
