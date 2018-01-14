@@ -59,6 +59,14 @@ namespace Mimi
 			Count += 1;
 		}
 
+		T* Emplace(std::uint32_t num = 1)
+		{
+			EnsureExtra(num);
+			T* ret = &Pointer[Count];
+			Count += num;
+			return ret;
+		}
+
 		void EnsureExtra(std::uint32_t num)
 		{
 			if (Count + num <= Capacity) return;

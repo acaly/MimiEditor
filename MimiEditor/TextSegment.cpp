@@ -200,3 +200,49 @@ std::uint32_t Mimi::TextSegment::ConvertSnapshotPosition(std::uint32_t snapshot,
 	}
 	return pos;
 }
+
+bool Mimi::TextSegment::FindLinkedLabelWithPrevious(std::uint32_t index, std::uint32_t * result)
+{
+	std::uint32_t i = FirstLabel();
+	while (NextLabel(&i))
+	{
+		LabelData* label = ReadLabelData(i);
+		if (label->Type & LabelType::Continuous)
+		{
+			if (label[1].Previous == index)
+			{
+				*result = i;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mimi::TextSegment::FindLinkedLabelWithNext(std::uint32_t index, std::uint32_t * result)
+{
+	std::uint32_t i = FirstLabel();
+	while (NextLabel(&i))
+	{
+		LabelData* label = ReadLabelData(i);
+		if (label->Type & LabelType::Unfinished)
+		{
+			if (label[1].Next == index)
+			{
+				*result = i;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void Mimi::TextSegment::NotifyLabelOwnerChange(TextSegment * newOwner, std::uint32_t begin, std::uint32_t end)
+{
+	LabelOwnerChangeEvent e;
+	e.OldOwner = this;
+	e.NewOwner = newOwner;
+	e.BeginPosition = begin;
+	e.EndPosition = end;
+	GetDocument()->LabelOwnerChange.InvokeAll(&e);
+}

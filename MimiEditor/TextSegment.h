@@ -10,6 +10,7 @@
 namespace Mimi
 {
 	class Document;
+	class TextSegment;
 	class TextSegmentList;
 	class TextSegmentRenderCache;
 
@@ -74,16 +75,6 @@ namespace Mimi
 			};
 			std::uint32_t Additional;
 		};
-	};
-
-	class LabelOwnerChangeEvent
-	{
-		friend class TextSegment;
-	private:
-		TextSegment* OldOwner;
-		TextSegment* NewOwner;
-		std::uint32_t BeginPosition;
-		std::uint32_t EndPositon;
 	};
 
 	struct LabelReference
@@ -259,6 +250,7 @@ namespace Mimi
 		//whole content or changed to a point label depending on the option parameter.
 		//Use null buffer pointer to delete text.
 		//Return the position after the inserted content.
+		//TODO Need to update labels and prepare for undo data.
 		std::uint32_t ReplaceText(std::uint32_t pos, std::uint32_t sel, DynamicBuffer* content);
 
 		void MarkModified(std::uint32_t time)
@@ -281,16 +273,86 @@ namespace Mimi
 		std::uint32_t ConvertSnapshotPosition(std::uint32_t snapshot, std::uint32_t pos, int dir);
 
 	private:
+		static std::uint32_t GetLabelLength(LabelData* label)
+		{
+			if (label->Type == 0) return 0;
+			std::uint32_t ret = 1;
+			if ((label->Type & LabelType::Topology) == LabelType::Range)
+			{
+				ret += 1;
+			}
+			if (label->Type & LabelType::Long)
+			{
+				ret += 1;
+			}
+			return ret;
+		}
+
 		void LabelSplit(TextSegment* other, std::uint32_t pos);
 		void LabelMerge(TextSegment* other);
 
-		std::uint32_t AllocateLabelSpace(std::uint32_t size);
-		void EraseLabelSpace(std::uint32_t index, std::uint32_t size);
-		LabelData* ReadLabelData(std::uint32_t index);
-		std::uint32_t NextLabel(std::uint32_t index);
-		std::uint32_t FindLinkedLabel(std::uint32_t index);
+		std::uint32_t AllocateLabelSpace(std::uint32_t size)
+		{
+			assert(size > 0);
+			LabelData* first = Labels.GetPointer();
+			std::uint32_t count = 0;
+			for (std::uint32_t i = 0; i < Labels.GetCount(); ++i)
+			{
+				auto len = GetLabelLength(&first[i]);
+				if (len == 0)
+				{
+					if (++count == size)
+					{
+						return i - (size - 1);
+					}
+				}
+				else
+				{
+					count = 0;
+				}
+			}
+			//Remove empty from tail.
+			if (count > 0)
+			{
+				Labels.RemoveRange(Labels.GetCount() - count, count);
+			}
+			return Labels.Emplace(size) - Labels.GetPointer(); //Possible reallocation
+		}
+
+		void EraseLabelSpace(std::uint32_t index, std::uint32_t size)
+		{
+			std::memset(ReadLabelData(index), 0, size * sizeof(LabelData));
+		}
+
+		LabelData* ReadLabelData(std::uint32_t index)
+		{
+			return &Labels.GetPointer()[index];
+		}
+
+		std::uint32_t FirstLabel()
+		{
+			return 0xFFFFFFFF;
+		}
+
+		bool NextLabel(std::uint32_t* index)
+		{
+			if (*index == 0xFFFFFFFF)
+			{
+				*index = 0;
+			}
+			std::uint32_t len = GetLabelLength(ReadLabelData(*index));
+			assert(len > 0 || *index == 0);
+			do
+			{
+				*index += len;
+				len = GetLabelLength(ReadLabelData(*index));
+			} while (len == 0 && *index < Labels.GetCount);
+			return len != 0;
+		}
+
+		bool FindLinkedLabelWithPrevious(std::uint32_t index, std::uint32_t* result);
+		bool FindLinkedLabelWithNext(std::uint32_t index, std::uint32_t* result);
 		void NotifyLabelOwnerChange(TextSegment* newOwner, std::uint32_t begin, std::uint32_t end);
-		//enumerate label
 
 	public:
 		//enumerate char

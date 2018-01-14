@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include <unordered_map>
+#include <queue>
 
 namespace Mimi
 {
@@ -116,6 +118,68 @@ namespace Mimi
 		{
 			return std::unique_ptr<EventHandlers::IEventHandler_<T>>
 				(new EventHandlers::MemberFunctionHandler<C, T>(f, i));
+		}
+	};
+
+	typedef unsigned int HandlerId;
+
+	//TODO multithread?
+	template <typename T>
+	class Event final
+	{
+	public:
+		Event() = default;
+		Event(const Event&) = delete;
+		Event(Event&&) = delete;
+		Event& operator= (const Event&) = delete;
+		~Event() = default;
+
+	private:
+		HandlerId NextId;
+		std::unordered_map<HandlerId, IEventHandler<T>> Handlers;
+		std::queue<HandlerId> UnusedId;
+
+	private:
+		HandlerId GetFreeId()
+		{
+			if (UnusedId.empty())
+			{
+				const HandlerId Allocate = 10;
+				for (HandlerId i = 1; i < Allocate; ++i) //0 is returned
+				{
+					UnusedId.push(NextId + i);
+				}
+				HandlerId ret = NextId;
+				NextId += Allocate;
+				return ret;
+			}
+			else
+			{
+				HandlerId ret = UnusedId.front(); //I hate C++
+				UnusedId.pop();
+				return ret;
+			}
+		}
+
+	public:
+		HandlerId AddHandler(IEventHandler<T> h)
+		{
+			HandlerId ret = GetFreeId();
+			Handlers[ret] = std::move(h);
+			return ret;
+		}
+
+		void RemoveHandler(HandlerId h)
+		{
+			Handlers.erase(h);
+		}
+
+		void InvokeAll(T* e)
+		{
+			for (auto& entry : Handlers)
+			{
+				entry.second->Invoke(e);
+			}
 		}
 	};
 }

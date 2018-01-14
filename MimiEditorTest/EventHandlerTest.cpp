@@ -31,14 +31,21 @@ int TestEventHandler()
 	HandlerClass i = { 100 };
 	EventArgs e = { 200 };
 	int ud = 300;
+	int ud2 = 400;
 
 	auto h1 = Mimi::EventHandler::FromStatic(&HandlerClass::StaticHandler);
 	auto h2 = Mimi::EventHandler::FromStatic(&HandlerClass::StaticHandlerWithUD, &ud);
 	auto h3 = Mimi::EventHandler::FromMember(&HandlerClass::MemberHandler, &i);
+	auto h4 = Mimi::EventHandler::FromStatic(&HandlerClass::StaticHandlerWithUD, &ud2);
 
-	h1->Invoke(&e);
-	h2->Invoke(&e);
-	h3->Invoke(&e);
+	Mimi::Event<EventArgs> handlers;
+	handlers.AddHandler(std::move(h1));
+	auto id2 = handlers.AddHandler(std::move(h2));
+	handlers.AddHandler(std::move(h3));
+	handlers.AddHandler(std::move(h4));
+	handlers.RemoveHandler(id2);
+
+	handlers.InvokeAll(&e);
 
 	return 0;
 }
