@@ -2,5 +2,5 @@
 
 int main()
 {
-	return TestModificationTracer();
+	return TestEventHandler();
 }
