@@ -86,6 +86,12 @@ namespace Mimi
 		std::uint32_t EndPositon;
 	};
 
+	struct LabelReference
+	{
+		TextSegment* Owner;
+		std::uint32_t Index;
+	};
+
 	struct ModifiedFlag
 	{
 	public:
@@ -105,6 +111,10 @@ namespace Mimi
 		bool SinceSave() { return Value | Save; }
 		bool SinceSnapshot() { return Value | Snapshot; }
 		bool SinceRender() { return Value | Render; }
+
+		void ClearSave() { Value &= ~Save; }
+		void ClearSnapshot() { Value &= ~Snapshot; }
+		void ClearRender() { Value &= ~Render; }
 	};
 
 	struct ContinuousFlag
@@ -249,32 +259,37 @@ namespace Mimi
 		//whole content or changed to a point label depending on the option parameter.
 		//Use null buffer pointer to delete text.
 		//Return the position after the inserted content.
-		std::uint32_t ReplaceText(std::uint32_t labelSelection, DynamicBuffer* content,
-			bool collapseLabel);
-		void MarkModified(std::uint32_t time);
-		void CheckAndMakeStatic(std::uint32_t time);
+		std::uint32_t ReplaceText(std::uint32_t pos, std::uint32_t sel, DynamicBuffer* content);
+
+		void MarkModified(std::uint32_t time)
+		{
+			if (IsActive())
+			{
+				ActiveData->LastModifiedTime = time;
+			}
+		}
+
+		void CheckAndMakeInactive(std::uint32_t time);
 
 	public:
 		TextSegmentRenderCache* GetRenderCache();
 		void DisposeRenderCache();
 
 	public:
-		StaticBuffer MakeSnapshot();
-		void DisposeSnapshot(std::uint32_t id);
-		std::uint32_t ConvertSnapshotPosition(std::uint32_t pos);
+		StaticBuffer MakeSnapshot(bool resize);
+		void DisposeSnapshot(std::uint32_t num, bool resize);
+		std::uint32_t ConvertSnapshotPosition(std::uint32_t snapshot, std::uint32_t pos, int dir);
 
 	private:
 		void LabelSplit(TextSegment* other, std::uint32_t pos);
 		void LabelMerge(TextSegment* other);
 
-	public: //TODO consider separating to new class
-		std::uint32_t AddLineLabel(std::uint32_t handler, std::uint8_t data);
-		std::uint32_t AddPointLabel(std::uint32_t pos, std::uint32_t handler, std::uint8_t data);
-		std::uint32_t AddRangeLabel(std::uint32_t pos1, std::uint32_t pos2, std::uint32_t handler,
-			std::uint8_t data, bool continuous);
-		void RemoveLabel(std::uint32_t id);
-		void GetLabel(std::uint32_t id /*, Label* result*/); //TODO support continuous
-		void NotifyLabelOwnerChange(); //TODO
+		std::uint32_t AllocateLabelSpace(std::uint32_t size);
+		void EraseLabelSpace(std::uint32_t index, std::uint32_t size);
+		LabelData* ReadLabelData(std::uint32_t index);
+		std::uint32_t NextLabel(std::uint32_t index);
+		std::uint32_t FindLinkedLabel(std::uint32_t index);
+		void NotifyLabelOwnerChange(TextSegment* newOwner, std::uint32_t begin, std::uint32_t end);
 		//enumerate label
 
 	public:

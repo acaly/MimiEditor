@@ -65,13 +65,24 @@ std::uint32_t Mimi::TextSegment::GetLineNumber()
 void Mimi::TextSegment::MakeActive()
 {
 	if (IsActive()) return;
+
+	std::uint32_t length = ContentBuffer.GetSize();
 	ActiveData = new ActiveTextSegmentData(ContentBuffer);
 	ContentBuffer.ClearRef();
+
+	//Setup modification tracer
+	ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
+	std::uint32_t count = GetDocument()->GetSnapshotCount();
+	for (std::uint32_t i = 0; i < count; ++i)
+	{
+		ActiveData->Modifications.NewSnapshot(i + 1, length);
+	}
 }
 
 void Mimi::TextSegment::MakeInactive()
 {
 	if (!IsActive()) return;
+	assert(GetDocument()->GetSnapshotCount() == 0);
 	ContentBuffer = ActiveData->ContentBuffer.MakeStaticBuffer();
 	delete ActiveData;
 	ActiveData = nullptr;
@@ -123,4 +134,69 @@ void Mimi::TextSegment::Merge()
 	other->Labels.Clear();
 	other->Parent->RemoveElement(other->Index);
 	delete other;
+}
+
+void Mimi::TextSegment::CheckAndMakeInactive(std::uint32_t time)
+{
+	if (IsActive() && ActiveData->LastModifiedTime < time &&
+		GetDocument()->GetSnapshotCount() == 0)
+	{
+		MakeInactive();
+	}
+}
+
+Mimi::StaticBuffer Mimi::TextSegment::MakeSnapshot(bool resize)
+{
+	//Start tracing
+	std::uint32_t cap = GetDocument()->GetSnapshotCapacity();
+	std::uint32_t count = GetDocument()->GetSnapshotCount();
+	assert(cap >= count);
+	if (IsActive())
+	{
+		if (resize)
+		{
+			ActiveData->Modifications.Resize(count);
+		}
+		ActiveData->Modifications.NewSnapshot(count, ActiveData->ContentBuffer.GetLength());
+	}
+
+	//Make a buffer
+	if (!IsActive())
+	{
+		return ContentBuffer.NewRef();
+	}
+	else if (!Modified.SinceSnapshot() && !ActiveData->SnapshotCache.IsNull())
+	{
+		return ActiveData->SnapshotCache.NewRef();
+	}
+	else
+	{
+		StaticBuffer ret = ActiveData->ContentBuffer.MakeStaticBuffer();
+		ActiveData->SnapshotCache.TryClearRef();
+		ActiveData->SnapshotCache = ret;
+		Modified.ClearSnapshot();
+		return ret.NewRef();
+	}
+}
+
+void Mimi::TextSegment::DisposeSnapshot(std::uint32_t num, bool resize)
+{
+	if (IsActive())
+	{
+		std::uint32_t newNum = GetDocument()->GetSnapshotCount();
+		ActiveData->Modifications.DisposeSnapshot(newNum + num, newNum);
+		if (resize)
+		{
+			ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
+		}
+	}
+}
+
+std::uint32_t Mimi::TextSegment::ConvertSnapshotPosition(std::uint32_t snapshot, std::uint32_t pos, int dir)
+{
+	if (IsActive())
+	{
+		return ActiveData->Modifications.ConvertFromSnapshot(snapshot, pos, dir);
+	}
+	return pos;
 }
