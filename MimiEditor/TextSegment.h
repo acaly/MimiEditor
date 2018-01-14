@@ -1,6 +1,4 @@
 #pragma once
-
-#include "CommonInternal.h"
 #include "ShortVector.h"
 #include "ModificationTracer.h"
 #include "Buffer.h"
@@ -346,7 +344,7 @@ namespace Mimi
 			{
 				*index += len;
 				len = GetLabelLength(ReadLabelData(*index));
-			} while (len == 0 && *index < Labels.GetCount);
+			} while (len == 0 && *index < Labels.GetCount());
 			return len != 0;
 		}
 

@@ -1,6 +1,4 @@
 #pragma once
-
-#include "CommonInternal.h"
 #include <cstdint>
 #include <type_traits>
 #include <cstring>

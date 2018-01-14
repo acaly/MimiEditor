@@ -32,8 +32,5 @@
     <ClInclude Include="lest.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TestFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

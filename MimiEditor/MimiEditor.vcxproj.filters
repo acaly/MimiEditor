@@ -24,12 +24,6 @@
     <ClInclude Include="CodePages.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
-    <ClInclude Include="CommonInternal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TextSegment.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>

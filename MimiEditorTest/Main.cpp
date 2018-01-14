@@ -1,4 +1,7 @@
-#include "TestFunctions.h"
+
+extern int TestModificationTracer();
+extern int TestModificationTracerSpeed();
+extern int TestEventHandler();
 
 int main()
 {

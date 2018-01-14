@@ -21,8 +21,6 @@
   <ItemGroup>
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CodePages.h" />
-    <ClInclude Include="CommonInternal.h" />
-    <ClInclude Include="Config.h" />
     <ClInclude Include="Document.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="ModificationTracer.h" />

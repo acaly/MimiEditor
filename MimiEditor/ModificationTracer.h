@@ -1,6 +1,4 @@
 #pragma once
-
-#include "CommonInternal.h"
 #include "ShortVector.h"
 #include <cstdint>
 
