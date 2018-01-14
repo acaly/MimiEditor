@@ -23,6 +23,7 @@
     <ClInclude Include="CodePages.h" />
     <ClInclude Include="CommonInternal.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Document.h" />
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
     <ClInclude Include="TextSegment.h" />

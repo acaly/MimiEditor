@@ -27,7 +27,7 @@ namespace Mimi
 			return ptr;
 		}
 
-	public:
+	private:
 		void IncreaseRef()
 		{
 			assert(Data);
@@ -43,14 +43,7 @@ namespace Mimi
 			}
 		}
 
-		void TryDecreaseRef()
-		{
-			if (Data)
-			{
-				DecreaseRef();
-			}
-		}
-
+	public:
 		StaticBuffer NewRef()
 		{
 			IncreaseRef();
@@ -65,6 +58,14 @@ namespace Mimi
 				delete[] reinterpret_cast<char*>(Data);
 			}
 			Clear();
+		}
+
+		void TryClearRef()
+		{
+			if (Data)
+			{
+				ClearRef();
+			}
 		}
 
 	public:
@@ -101,19 +102,16 @@ namespace Mimi
 			Length = 0;
 			Capacity = capacity;
 			IsExternalBuffer = false;
-			IsFastMode = false;
 		}
 
 		//Use an external memory block.
 		DynamicBuffer(StaticBuffer buffer)
 		{
-			ExternalBuffer = buffer;
-			buffer.IncreaseRef();
+			ExternalBuffer = buffer.NewRef();
 			Pointer = nullptr;
 			Length = buffer.GetSize();
 			Capacity = 0;
 			IsExternalBuffer = true;
-			IsFastMode = false;
 		}
 
 		DynamicBuffer(const DynamicBuffer&) = delete;
@@ -131,7 +129,7 @@ namespace Mimi
 			else
 			{
 				IsExternalBuffer = false;
-				ExternalBuffer.DecreaseRef();
+				ExternalBuffer.ClearRef();
 				Length = Capacity = 0;
 			}
 		}
@@ -142,8 +140,6 @@ namespace Mimi
 		std::uint16_t Length;
 		std::uint16_t Capacity;
 		bool IsExternalBuffer;
-		bool IsFastMode;
-		//TODO Fast mode storage
 
 	public:
 		std::uint32_t GetLength()
@@ -151,12 +147,25 @@ namespace Mimi
 			return Length;
 		}
 
-		std::uint32_t CopyTo(std::uint8_t* buffer, std::uint32_t bufferLen)
+		//Readonly
+		const std::uint8_t* GetRawData()
 		{
-			std::uint32_t copyLen = Length;
-			if (bufferLen < copyLen)
+			if (IsExternalBuffer)
 			{
-				copyLen = bufferLen;
+				return ExternalBuffer.GetRawData();
+			}
+			else
+			{
+				return Pointer;
+			}
+		}
+
+		std::uint32_t CopyTo(std::uint8_t* buffer, std::uint32_t pos, std::uint32_t len)
+		{
+			std::uint32_t copyLen = Length - pos;
+			if (len < copyLen)
+			{
+				copyLen = len;
 			}
 			if (IsExternalBuffer)
 			{
@@ -171,7 +180,6 @@ namespace Mimi
 
 		StaticBuffer MakeStaticBuffer()
 		{
-			assert(!IsFastMode); //TODO
 			StaticBuffer::StaticBufferData* ptr = StaticBuffer::AllocateData(Length);
 			ptr->RefCount = 1;
 			ptr->Size = Length;
@@ -190,25 +198,33 @@ namespace Mimi
 		}
 
 	private:
-		void EnsureInternalBuffer(std::uint32_t extra)
+		void EnsureInternalBuffer(std::uint32_t newSize, bool copy)
 		{
 			if (IsExternalBuffer)
 			{
 				std::uint16_t capacity = 16;
-				while (capacity < Length + extra) capacity *= 2;
+				while (capacity < newSize) capacity *= 2;
 				std::uint8_t* newBuffer = new std::uint8_t[capacity];
-				std::memcpy(newBuffer, ExternalBuffer.GetRawData(), Length);
+				if (copy)
+				{
+					std::uint32_t copyLen = Length < capacity ? Length : capacity;
+					std::memcpy(newBuffer, ExternalBuffer.GetRawData(), copyLen);
+				}
 				Pointer = newBuffer;
 				Capacity = capacity;
 				IsExternalBuffer = false;
-				ExternalBuffer.DecreaseRef();
+				ExternalBuffer.ClearRef();
 			}
-			else if (Capacity < Length + extra)
+			else if (Capacity < newSize)
 			{
 				std::uint16_t capacity = Capacity;
-				while (capacity < Length + extra) capacity *= 2;
+				while (capacity < newSize) capacity *= 2;
 				std::uint8_t* newBuffer = new std::uint8_t[capacity];
-				std::memcpy(newBuffer, Pointer, Length);
+				if (copy)
+				{
+					std::uint32_t copyLen = Length < capacity ? Length : capacity;
+					std::memcpy(newBuffer, Pointer, copyLen);
+				}
 				delete[] Pointer;
 				Pointer = newBuffer;
 				Capacity = capacity;
@@ -234,11 +250,7 @@ namespace Mimi
 		void Replace(std::uint32_t pos, std::uint32_t sel, const std::uint8_t* data, std::uint32_t dataLen)
 		{
 			assert(pos + sel <= Length);
-			assert(!IsFastMode); //TODO
-			if (sel < dataLen)
-			{
-				EnsureInternalBuffer(dataLen - sel);
-			}
+			EnsureInternalBuffer(Length + dataLen - sel, true);
 			std::memmove(&Pointer[pos + dataLen], &Pointer[pos + sel], Length - pos - sel);
 			if (dataLen) std::memcpy(&Pointer[pos], data, dataLen);
 			Length -= sel;
@@ -259,11 +271,19 @@ namespace Mimi
 		}
 
 	public:
-		void StartFastMode()
+		void SplitLeft(DynamicBuffer& other, std::uint32_t pos)
 		{
-			//TODO enable fast mode
+			other.EnsureInternalBuffer(pos, false);
+			CopyTo(other.Pointer, 0, pos);
+			Delete(0, pos);
 		}
 
-		void FinishFastMode(); //TODO
+		void SplitRight(DynamicBuffer& other, std::uint32_t pos)
+		{
+			std::uint32_t move = Length - pos;
+			other.EnsureInternalBuffer(move, false);
+			CopyTo(other.Pointer, pos, move);
+			Delete(pos, move);
+		}
 	};
 }

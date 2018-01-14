@@ -21,11 +21,10 @@ namespace Mimi
 
 			Line = 1,
 			Point = 2,
-			RangeAny = 4, //mask only
-			RangeOpen = 5,
-			RangeClose = 6,
-			Removed = 7,
-			Topology = 7, //mask only
+			Range = 3,
+			Topology = 3, //mask only
+
+			Long = 4,
 
 			Left = 8,
 			Right = 16,
@@ -57,20 +56,24 @@ namespace Mimi
 		std::uint8_t Type;
 		//Data defined by Handler to store additional data.
 		std::uint8_t Data;
-		//Index of Label handers (registered in the system).
-		//For continuous flag, this is the index of previous label.
-		std::uint16_t Handler;
-		//Position of the Label (updated by the segment).
-		std::uint16_t Position;
-
-		//TODO:
-		//Allow larger data to be stored for some labels.
-		//  Can be achieved by adding a following LabelData struct
-		//  (6 bytes additional data).
-		//  Compress the Type enum and give another flag for this.
-		//Allow faster lookup for continuous label.
-		//  Because continuous must be range. We can use other
-		//  fields in the pair to store the backward reference.
+		union
+		{
+			struct
+			{
+				//Index of Label handers (registered in the system).
+				std::uint16_t Handler;
+				//Position of the Label (updated by the segment).
+				std::uint16_t Position;
+			};
+			struct
+			{
+				//Index of Label handers (registered in the system).
+				std::uint16_t Previous;
+				//Position of the Label (updated by the segment).
+				std::uint16_t Next;
+			};
+			std::uint32_t Additional;
+		};
 	};
 
 	class LabelOwnerChangeEvent
@@ -140,8 +143,15 @@ namespace Mimi
 		ActiveTextSegmentData(StaticBuffer content)
 			: ContentBuffer(content)
 		{
-			LastModifiedTime = 0xFFFFFFFF;
+			LastModifiedTime = 0;
 			SnapshotCache = content.NewRef();
+		}
+
+		ActiveTextSegmentData()
+			: ContentBuffer(0)
+		{
+			LastModifiedTime = 0;
+			SnapshotCache.Clear();
 		}
 
 		~ActiveTextSegmentData()
@@ -163,6 +173,7 @@ namespace Mimi
 
 	public:
 		TextSegment(DynamicBuffer& buffer, bool continuous, bool unfinished);
+		TextSegment(bool continuous, bool unfinished);
 
 		TextSegment(const TextSegment&) = delete;
 		TextSegment(TextSegment&&) = delete;
@@ -220,13 +231,16 @@ namespace Mimi
 		Document* GetDocument();
 		std::uint32_t GetLineNumber();
 
+		bool IsActive()
+		{
+			return ActiveData != nullptr;
+		}
+
 	private:
-		void MakeDynamic();
-		void MakeStatic();
-		void SplitLeft(std::uint32_t pos);
-		void SplitRight(std::uint32_t pos);
-		void MergeWithLeft();
-		void MergeWithRight();
+		void MakeActive();
+		void MakeInactive();
+		void Split(std::uint32_t pos, bool newLine);
+		void Merge();
 
 	public:
 		//Replace text within the range given by a label. New content is given in a buffer.
@@ -248,6 +262,10 @@ namespace Mimi
 		StaticBuffer MakeSnapshot();
 		void DisposeSnapshot(std::uint32_t id);
 		std::uint32_t ConvertSnapshotPosition(std::uint32_t pos);
+
+	private:
+		void LabelSplit(TextSegment* other, std::uint32_t pos);
+		void LabelMerge(TextSegment* other);
 
 	public: //TODO consider separating to new class
 		std::uint32_t AddLineLabel(std::uint32_t handler, std::uint8_t data);

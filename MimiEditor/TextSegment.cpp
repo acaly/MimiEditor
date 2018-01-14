@@ -1,5 +1,6 @@
 #include "TextSegment.h"
 #include "TextSegmentList.h"
+#include "Document.h"
 
 Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous, bool unfinished)
 	: Continuous(continuous, unfinished)
@@ -7,6 +8,16 @@ Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous, boo
 	Parent = nullptr;
 	Index = 0;
 	ContentBuffer = buffer.MakeStaticBuffer();
+	ActiveData = nullptr;
+	RenderCache = nullptr;
+}
+
+Mimi::TextSegment::TextSegment(bool continuous, bool unfinished)
+	: Continuous(continuous, unfinished)
+{
+	Parent = nullptr;
+	Index = 0;
+	ContentBuffer.Clear();
 	ActiveData = nullptr;
 	RenderCache = nullptr;
 }
@@ -51,35 +62,65 @@ std::uint32_t Mimi::TextSegment::GetLineNumber()
 	return n;
 }
 
-void Mimi::TextSegment::MakeDynamic()
+void Mimi::TextSegment::MakeActive()
 {
+	if (IsActive()) return;
 	ActiveData = new ActiveTextSegmentData(ContentBuffer);
 	ContentBuffer.ClearRef();
 }
 
-void Mimi::TextSegment::MakeStatic()
+void Mimi::TextSegment::MakeInactive()
 {
+	if (!IsActive()) return;
 	ContentBuffer = ActiveData->ContentBuffer.MakeStaticBuffer();
 	delete ActiveData;
 	ActiveData = nullptr;
 }
 
-void Mimi::TextSegment::SplitLeft(std::uint32_t pos)
+void Mimi::TextSegment::Split(std::uint32_t pos, bool newLine)
 {
+	MakeActive();
 
+	//Make the new segment
+	TextSegment* newSegment = new TextSegment(!newLine, Continuous.IsUnfinished());
+	Continuous.SetUnfinished(!newLine);
+	newSegment->ActiveData = new ActiveTextSegmentData();
+
+	//Content
+	ActiveData->ContentBuffer.SplitRight(newSegment->ActiveData->ContentBuffer, pos);
+	//Modification
+	newSegment->ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
+	ActiveData->Modifications.SplitInto(newSegment->ActiveData->Modifications,
+		GetDocument()->GetSnapshotCount(), pos);
+	//Label
+	LabelSplit(newSegment, pos);
+
+	//Add to list
+	Parent->InsertElement(Index + 1, newSegment);
 }
 
-void Mimi::TextSegment::SplitRight(std::uint32_t pos)
+void Mimi::TextSegment::Merge()
 {
+	TextSegment* other = GetNextSegment();
 
-}
+	MakeActive();
+	other->MakeActive();
 
-void Mimi::TextSegment::MergeWithLeft()
-{
+	//Content
+	ActiveData->ContentBuffer.Insert(ActiveData->ContentBuffer.GetLength(),
+		other->ActiveData->ContentBuffer.GetRawData(),
+		other->ActiveData->ContentBuffer.GetLength());
+	//Modification
+	other->ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
+	ActiveData->Modifications.MergeWith(other->ActiveData->Modifications,
+		GetDocument()->GetSnapshotCount());
+	//Label
+	LabelMerge(other);
 
-}
-
-void Mimi::TextSegment::MergeWithRight()
-{
-
+	//Dispose
+	other->ActiveData->SnapshotCache.ClearRef();
+	other->ContentBuffer.ClearRef();
+	other->Labels.Clear();
+	other->Parent->RemoveElement(other->Index);
+	delete other;
 }
