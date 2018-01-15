@@ -172,6 +172,7 @@ namespace Mimi
 		void RemoveHandler(HandlerId h)
 		{
 			Handlers.erase(h);
+			UnusedId.push(h);
 		}
 
 		void InvokeAll(T* e)
