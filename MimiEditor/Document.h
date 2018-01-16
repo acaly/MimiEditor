@@ -14,6 +14,7 @@ namespace Mimi
 		TextSegment* NewOwner;
 		std::uint32_t BeginPosition;
 		std::uint32_t EndPosition;
+		std::int32_t IndexChange;
 	};
 
 	class Document

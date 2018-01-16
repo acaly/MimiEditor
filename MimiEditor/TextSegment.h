@@ -235,6 +235,15 @@ namespace Mimi
 			return ActiveData != nullptr;
 		}
 
+		std::uint32_t GetCurrentLength()
+		{
+			if (IsActive())
+			{
+				return ActiveData->ContentBuffer.GetLength();
+			}
+			return ContentBuffer.GetSize();
+		}
+
 	private:
 		void MakeActive();
 		void MakeInactive();
@@ -286,9 +295,6 @@ namespace Mimi
 			return ret;
 		}
 
-		void LabelSplit(TextSegment* other, std::uint32_t pos);
-		void LabelMerge(TextSegment* other);
-
 		std::uint32_t AllocateLabelSpace(std::uint32_t size)
 		{
 			assert(size > 0);
@@ -327,6 +333,11 @@ namespace Mimi
 			return &Labels.GetPointer()[index];
 		}
 
+		std::uint32_t GetLabelIndex(LabelData* label)
+		{
+			return label - Labels.GetPointer();
+		}
+
 		std::uint32_t FirstLabel()
 		{
 			return 0xFFFFFFFF;
@@ -348,9 +359,21 @@ namespace Mimi
 			return len != 0;
 		}
 
-		bool FindLinkedLabelWithPrevious(std::uint32_t index, std::uint32_t* result);
-		bool FindLinkedLabelWithNext(std::uint32_t index, std::uint32_t* result);
-		void NotifyLabelOwnerChange(TextSegment* newOwner, std::uint32_t begin, std::uint32_t end);
+	private:
+		void MoveLabels(TextSegment* dest, std::uint32_t begin);
+
+		void LabelSplit(TextSegment* other, std::uint32_t pos)
+		{
+			MoveLabels(other, pos);
+		}
+
+		void LabelMerge(TextSegment* other)
+		{
+			assert(other == GetPreviousSegment());
+			MoveLabels(other, 0);
+		}
+
+		void NotifyLabelOwnerChange(TextSegment* newOwner, std::uint32_t begin, std::uint32_t end, std::int32_t change);
 
 	public:
 		//enumerate char

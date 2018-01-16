@@ -201,48 +201,127 @@ std::uint32_t Mimi::TextSegment::ConvertSnapshotPosition(std::uint32_t snapshot,
 	return pos;
 }
 
-bool Mimi::TextSegment::FindLinkedLabelWithPrevious(std::uint32_t index, std::uint32_t * result)
+void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::uint32_t begin)
 {
+	assert(begin > 0 || dest == GetPreviousSegment()); //split or merge
+	//Move referred labels
 	std::uint32_t i = FirstLabel();
+	LabelData* firstRef = nullptr;
+	LabelData* lastRef = nullptr;
+	std::uint32_t lastLen = 0;
 	while (NextLabel(&i))
 	{
 		LabelData* label = ReadLabelData(i);
-		if (label->Type & LabelType::Continuous)
+		if (label->Position >= begin)
 		{
-			if (label[1].Previous == index)
+			if (label->Type & LabelType::Referred)
 			{
-				*result = i;
-				return true;
+				if (!firstRef) firstRef = label;
+				lastRef = label;
+				lastLen = GetLabelLength(label);
 			}
 		}
 	}
-	return false;
-}
+	TextSegment* next = GetNextSegment();
+	//Move referenced labels
+	if (firstRef)
+	{
+		//Copy data.
+		std::uint32_t space = lastRef - firstRef + lastLen;
+		std::uint32_t alloc = dest->AllocateLabelSpace(space);
+		std::uint32_t firstIndex = GetLabelIndex(firstRef);
+		std::uint32_t lastIndex = GetLabelIndex(lastRef);
+		i = firstIndex;
+		do
+		{
+			LabelData* label = ReadLabelData(i);
+			if (label->Position >= begin && label->Type & LabelType::Referred)
+			{
+				std::uint32_t offset = i - firstIndex;
+				std::uint32_t len = GetLabelLength(label);
 
-bool Mimi::TextSegment::FindLinkedLabelWithNext(std::uint32_t index, std::uint32_t * result)
-{
-	std::uint32_t i = FirstLabel();
+				if (begin == 0 && label->Type & LabelType::Continuous)
+				{
+					//Merge the two labels as one.
+					//We have ensured that dest is the previous segment.
+					std::uint32_t linked = label[1].Previous;
+					std::uint16_t rangeLen = label[1].Position - label[0].Position;
+					LabelData* linkedLabel = dest->ReadLabelData(linked);
+					assert(linkedLabel[1].Next == i);
+					linkedLabel[1].Position += rangeLen;
+					linkedLabel[1].Next = label[1].Next;
+					if ((label->Type & LabelType::Unfinished) == 0)
+					{
+						linkedLabel->Type &= ~LabelType::Unfinished;
+					}
+				}
+				else
+				{
+					std::memcpy(dest->ReadLabelData(alloc + offset), label, len * sizeof(LabelData));
+					//Update linked next
+					if (label->Type & LabelType::Unfinished)
+					{
+						std::uint32_t linked = label[1].Next;
+						assert(next->ReadLabelData(linked)[1].Previous == i);
+						next->ReadLabelData(linked)[1].Previous = alloc + offset;
+					}
+				}
+				EraseLabelSpace(i, len);
+			}
+		} while (NextLabel(&i) && i <= lastIndex);
+		std::int32_t change = static_cast<std::int32_t>(alloc) - static_cast<std::int32_t>(firstIndex);
+		NotifyLabelOwnerChange(dest, begin, GetCurrentLength(), change);
+	}
+	//Move other labels.
+	i = FirstLabel();
 	while (NextLabel(&i))
 	{
 		LabelData* label = ReadLabelData(i);
-		if (label->Type & LabelType::Unfinished)
+		if (label->Position >= begin)
 		{
-			if (label[1].Next == index)
+			LabelData* label = ReadLabelData(i);
+			std::uint32_t len = GetLabelLength(label);
+			std::uint32_t alloc = dest->AllocateLabelSpace(len);
+
+			if (begin == 0 && label->Type & LabelType::Continuous)
 			{
-				*result = i;
-				return true;
+				//Merge the two labels as one.
+				//We have ensured that dest is the previous segment.
+				std::uint32_t linked = label[1].Previous;
+				std::uint16_t rangeLen = label[1].Position - label[0].Position;
+				LabelData* linkedLabel = dest->ReadLabelData(linked);
+				assert(linkedLabel[1].Next == i);
+				linkedLabel[1].Position += rangeLen;
+				linkedLabel[1].Next = label[1].Next;
+				if ((label->Type & LabelType::Unfinished) == 0)
+				{
+					linkedLabel->Type &= ~LabelType::Unfinished;
+				}
 			}
+			else
+			{
+				std::memcpy(dest->ReadLabelData(alloc), label, len * sizeof(LabelData));
+				//Update linked next
+				if (label->Type & LabelType::Unfinished)
+				{
+					std::uint32_t linked = label[1].Next;
+					assert(next->ReadLabelData(linked)[1].Previous == i);
+					next->ReadLabelData(linked)[1].Previous = alloc;
+				}
+			}
+			EraseLabelSpace(i, len);
 		}
 	}
-	return false;
 }
 
-void Mimi::TextSegment::NotifyLabelOwnerChange(TextSegment * newOwner, std::uint32_t begin, std::uint32_t end)
+void Mimi::TextSegment::NotifyLabelOwnerChange(TextSegment * newOwner, std::uint32_t begin,
+	std::uint32_t end, std::int32_t change)
 {
 	LabelOwnerChangeEvent e;
 	e.OldOwner = this;
 	e.NewOwner = newOwner;
 	e.BeginPosition = begin;
 	e.EndPosition = end;
+	e.IndexChange = change;
 	GetDocument()->LabelOwnerChange.InvokeAll(&e);
 }
