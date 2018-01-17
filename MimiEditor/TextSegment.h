@@ -2,8 +2,11 @@
 #include "ShortVector.h"
 #include "ModificationTracer.h"
 #include "Buffer.h"
+#include "TextSegmentList.h"
 #include <cstdint>
+#include <cstddef>
 #include <vector>
+#include <limits>
 
 namespace Mimi
 {
@@ -195,12 +198,13 @@ namespace Mimi
 		//render height?
 
 	private:
-		void AddToList(TextSegmentList* list, std::uint32_t index)
+		void AddToList(TextSegmentList* list, std::size_t index)
 		{
+			assert(index < TextSegmentTreeFactor);
 			assert(Parent == nullptr);
 			assert(list != nullptr);
 			Parent = list;
-			Index = index;
+			Index = static_cast<std::uint16_t>(index);
 		}
 
 	public:
@@ -209,7 +213,7 @@ namespace Mimi
 			return Parent;
 		}
 
-		std::uint16_t GetIndexInList()
+		std::size_t GetIndexInList()
 		{
 			return Index;
 		}
@@ -228,14 +232,14 @@ namespace Mimi
 		}
 
 		Document* GetDocument();
-		std::uint32_t GetLineNumber();
+		std::size_t GetLineNumber();
 
 		bool IsActive()
 		{
 			return ActiveData != nullptr;
 		}
 
-		std::uint32_t GetCurrentLength()
+		std::size_t GetCurrentLength()
 		{
 			if (IsActive())
 			{
@@ -247,7 +251,7 @@ namespace Mimi
 	private:
 		void MakeActive();
 		void MakeInactive();
-		void Split(std::uint32_t pos, bool newLine);
+		void Split(std::size_t pos, bool newLine);
 		void Merge();
 
 	public:
@@ -258,7 +262,7 @@ namespace Mimi
 		//Use null buffer pointer to delete text.
 		//Return the position after the inserted content.
 		//TODO Need to update labels and prepare for undo data.
-		std::uint32_t ReplaceText(std::uint32_t pos, std::uint32_t sel, DynamicBuffer* content);
+		std::size_t ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content);
 
 		void MarkModified(std::uint32_t time)
 		{
@@ -276,14 +280,14 @@ namespace Mimi
 
 	public:
 		StaticBuffer MakeSnapshot(bool resize);
-		void DisposeSnapshot(std::uint32_t num, bool resize);
-		std::uint32_t ConvertSnapshotPosition(std::uint32_t snapshot, std::uint32_t pos, int dir);
+		void DisposeSnapshot(std::size_t num, bool resize);
+		std::size_t ConvertSnapshotPosition(std::size_t snapshot, std::size_t pos, int dir);
 
 	private:
-		static std::uint32_t GetLabelLength(LabelData* label)
+		static std::size_t GetLabelLength(LabelData* label)
 		{
 			if (label->Type == 0) return 0;
-			std::uint32_t ret = 1;
+			std::size_t ret = 1;
 			if ((label->Type & LabelType::Topology) == LabelType::Range)
 			{
 				ret += 1;
@@ -295,12 +299,12 @@ namespace Mimi
 			return ret;
 		}
 
-		std::uint32_t AllocateLabelSpace(std::uint32_t size)
+		std::size_t AllocateLabelSpace(std::size_t size)
 		{
 			assert(size > 0);
 			LabelData* first = Labels.GetPointer();
-			std::uint32_t count = 0;
-			for (std::uint32_t i = 0; i < Labels.GetCount(); ++i)
+			std::size_t count = 0;
+			for (std::size_t i = 0; i < Labels.GetCount(); ++i)
 			{
 				auto len = GetLabelLength(&first[i]);
 				if (len == 0)
@@ -323,33 +327,33 @@ namespace Mimi
 			return Labels.Emplace(size) - Labels.GetPointer(); //Possible reallocation
 		}
 
-		void EraseLabelSpace(std::uint32_t index, std::uint32_t size)
+		void EraseLabelSpace(std::size_t index, std::size_t size)
 		{
 			std::memset(ReadLabelData(index), 0, size * sizeof(LabelData));
 		}
 
-		LabelData* ReadLabelData(std::uint32_t index)
+		LabelData* ReadLabelData(std::size_t index)
 		{
 			return &Labels.GetPointer()[index];
 		}
 
-		std::uint32_t GetLabelIndex(LabelData* label)
+		std::size_t GetLabelIndex(LabelData* label)
 		{
 			return label - Labels.GetPointer();
 		}
 
-		std::uint32_t FirstLabel()
+		std::size_t FirstLabel()
 		{
-			return 0xFFFFFFFF;
+			return std::numeric_limits<std::size_t>::max();
 		}
 
-		bool NextLabel(std::uint32_t* index)
+		bool NextLabel(std::size_t* index)
 		{
-			if (*index == 0xFFFFFFFF)
+			if (*index == FirstLabel())
 			{
 				*index = 0;
 			}
-			std::uint32_t len = GetLabelLength(ReadLabelData(*index));
+			std::size_t len = GetLabelLength(ReadLabelData(*index));
 			assert(len > 0 || *index == 0);
 			do
 			{
@@ -360,9 +364,9 @@ namespace Mimi
 		}
 
 	private:
-		void MoveLabels(TextSegment* dest, std::uint32_t begin);
+		void MoveLabels(TextSegment* dest, std::size_t begin);
 
-		void LabelSplit(TextSegment* other, std::uint32_t pos)
+		void LabelSplit(TextSegment* other, std::size_t pos)
 		{
 			MoveLabels(other, pos);
 		}
@@ -373,7 +377,7 @@ namespace Mimi
 			MoveLabels(other, 0);
 		}
 
-		void NotifyLabelOwnerChange(TextSegment* newOwner, std::uint32_t begin, std::uint32_t end, std::int32_t change);
+		void NotifyLabelOwnerChange(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
 
 	public:
 		//enumerate char

@@ -1,6 +1,7 @@
 #pragma once
 #include "EventHandler.h"
 #include <cstdint>
+#include <cstddef>
 
 namespace Mimi
 {
@@ -12,9 +13,9 @@ namespace Mimi
 	private:
 		TextSegment* OldOwner;
 		TextSegment* NewOwner;
-		std::uint32_t BeginPosition;
-		std::uint32_t EndPosition;
-		std::int32_t IndexChange;
+		std::size_t BeginPosition;
+		std::size_t EndPosition;
+		std::ptrdiff_t IndexChange;
 	};
 
 	class Document
@@ -22,8 +23,8 @@ namespace Mimi
 		friend class TextSegment;
 
 	public:
-		std::uint32_t GetSnapshotCount();
-		std::uint32_t GetSnapshotCapacity();
+		std::size_t GetSnapshotCount();
+		std::size_t GetSnapshotCapacity();
 
 	public:
 		Event<LabelOwnerChangeEvent> LabelOwnerChange;

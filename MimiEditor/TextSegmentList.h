@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include <cassert>
 
 namespace Mimi
@@ -56,14 +57,14 @@ namespace Mimi
 			return DocumentPtr;
 		}
 
-		std::uint32_t GetAbsIndex();
-		std::uint32_t GetAbsLineIndex();
+		std::size_t GetAbsIndex();
+		std::size_t GetAbsLineIndex();
 
-		TextSegment* GetElementBefore(std::uint32_t pos);
-		TextSegment* GetElementAfter(std::uint32_t pos);
+		TextSegment* GetElementBefore(std::size_t pos);
+		TextSegment* GetElementAfter(std::size_t pos);
 
 	public:
-		void InsertElement(std::uint32_t pos, TextSegment* element);
-		void RemoveElement(std::uint32_t pos);
+		void InsertElement(std::size_t pos, TextSegment* element);
+		void RemoveElement(std::size_t pos);
 	};
 }

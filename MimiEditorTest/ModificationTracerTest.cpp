@@ -42,8 +42,8 @@ public:
 	void CheckConversion()
 	{
 		int last = -1;
-		unsigned int vectorPosition = 0;
-		unsigned int lastVectorPosition = ModificationTracer::PositionDeleted;
+		std::size_t vectorPosition = 0;
+		std::size_t lastVectorPosition = ModificationTracer::PositionDeleted;
 		while (vectorPosition < Items.size())
 		{
 			if (Items[vectorPosition] != -1)

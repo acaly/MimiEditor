@@ -1,6 +1,8 @@
 #pragma once
 #include "ShortVector.h"
 #include <cstdint>
+#include <cstddef>
+#include <limits>
 
 namespace Mimi
 {
@@ -18,6 +20,9 @@ namespace Mimi
 	//nodes.
 	class ModificationTracer final
 	{
+		static const std::size_t MaxLength = 0x7FFF;
+		static const std::size_t MaxSnapshot = 0xFF;
+
 	public:
 		ModificationTracer();
 		ModificationTracer(const ModificationTracer&) = delete;
@@ -44,27 +49,27 @@ namespace Mimi
 		Snapshot* SnapshotHead;
 
 	public:
-		static const std::uint32_t PositionDeleted = 0xFFFFFFFF;
+		static const std::size_t PositionDeleted = std::numeric_limits<std::size_t>::max();
 
 	public:
-		void Insert(std::uint32_t pos, std::uint32_t len);
-		void Delete(std::uint32_t pos, std::uint32_t len);
+		void Insert(std::size_t pos, std::size_t len);
+		void Delete(std::size_t pos, std::size_t len);
 
 	private:
-		void ExchangeFront(std::uint32_t oldNum);
+		void ExchangeFront(std::size_t oldNum);
 
 	public:
-		void NewSnapshot(std::uint32_t newSnapshotNum, std::uint32_t length);
-		void DisposeSnapshot(std::uint32_t oldNum, std::uint32_t num);
-		void Resize(std::uint32_t newCapacity);
+		void NewSnapshot(std::size_t newSnapshotNum, std::size_t length);
+		void DisposeSnapshot(std::size_t oldNum, std::size_t num);
+		void Resize(std::size_t newCapacity);
 
 	private:
-		std::uint32_t ConvertFromSnapshotSingle(Snapshot* snapshot, std::uint32_t pos, int dir);
-		std::uint32_t ConvertToSnapshotSingle(Snapshot* snapshot, std::uint32_t pos, int dir);
+		std::size_t ConvertFromSnapshotSingle(Snapshot* snapshot, std::size_t pos, int dir);
+		std::size_t ConvertToSnapshotSingle(Snapshot* snapshot, std::size_t pos, int dir);
 
 	private:
-		std::uint32_t ConvertFromSnapshotInternal(Snapshot* snapshot,
-			std::uint32_t nsnapshot, std::uint32_t pos, int dir)
+		std::size_t ConvertFromSnapshotInternal(Snapshot* snapshot,
+			std::size_t nsnapshot, std::size_t pos, int dir)
 		{
 			if (nsnapshot == 0) return pos;
 			if (nsnapshot == 1) return ConvertFromSnapshotSingle(snapshot, pos, dir);
@@ -79,7 +84,7 @@ namespace Mimi
 		//  -1 to attach to left (move right when deleted)
 		//  +1 to attach to right (move left when deleted)
 		//  0 to attach to the char (return PositionDeleted when deleted)
-		std::uint32_t ConvertFromSnapshot(std::uint32_t snapshot, std::uint32_t pos, int dir)
+		std::size_t ConvertFromSnapshot(std::size_t snapshot, std::size_t pos, int dir)
 		{
 			if (snapshot == 0)
 			{
@@ -88,7 +93,7 @@ namespace Mimi
 			return ConvertFromSnapshotInternal(SnapshotHead, snapshot + 1, pos, dir);
 		}
 
-		std::uint32_t ConvertToSnapshot(std::uint32_t snapshot, std::uint32_t pos, int dir)
+		std::size_t ConvertToSnapshot(std::size_t snapshot, std::size_t pos, int dir)
 		{
 			auto newPos = ConvertToSnapshotSingle(SnapshotHead, pos, dir);
 			if (snapshot == 0 || newPos == PositionDeleted)
@@ -96,7 +101,7 @@ namespace Mimi
 				return newPos;
 			}
 			Snapshot* s = SnapshotHead->Next;
-			for (std::uint32_t i = 0; i < snapshot; ++i)
+			for (std::size_t i = 0; i < snapshot; ++i)
 			{
 				newPos = ConvertToSnapshotSingle(s, newPos, dir);
 				if (newPos == PositionDeleted) return PositionDeleted;
@@ -105,23 +110,23 @@ namespace Mimi
 			return newPos;
 		}
 
-		std::uint32_t FirstModifiedFromSnapshot(std::uint32_t snapshot);
+		std::size_t FirstModifiedFromSnapshot(std::size_t snapshot);
 
 	public:
 		//Merge this tracer with 'other'.
 		//All snapshots are merged (number given in 'snapshot'). After this, 'other' can be
 		//deleted without losing any information.
-		void MergeWith(ModificationTracer& other, std::uint32_t snapshots);
+		void MergeWith(ModificationTracer& other, std::size_t snapshots);
 
 		//Split this tracer at position given in 'pos'. The data after this position is
 		//transfered to 'other' (must be initialized with proper capacity before calling this
 		//function). All snapshots are split at proper position.
 		//Note that the initialization of 'other' is capacity (by Resize), not number of
 		//snapshots. Snapshot items will be modified from the beginning.
-		void SplitInto(ModificationTracer& other, std::uint32_t snapshots, std::uint32_t pos);
+		void SplitInto(ModificationTracer& other, std::size_t snapshots, std::size_t pos);
 
 	public:
 		//Used in test and debug cases only.
-		bool CheckSequence(std::uint32_t numSnapshot, std::uint32_t rangeCheck);
+		bool CheckSequence(std::size_t numSnapshot, std::size_t rangeCheck);
 	};
 }

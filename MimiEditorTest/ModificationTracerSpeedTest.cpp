@@ -2,14 +2,14 @@
 
 using namespace Mimi;
 
-int TestModificationTracerSpeed()
+std::size_t TestModificationTracerSpeed()
 {
 	ModificationTracer t;
 	t.Resize(1);
 	const int WriteLen = 100;
 	const int Repeat = 5000000;
 
-	unsigned int ret = 0;
+	std::size_t ret = 0;
 	for (int i = 0; i < Repeat; ++i)
 	{
 		t.NewSnapshot(1, 10);

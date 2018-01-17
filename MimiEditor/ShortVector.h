@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include <type_traits>
 #include <cstring>
 #include <cassert>
@@ -9,6 +10,8 @@ namespace Mimi
 	template <typename T>
 	class ShortVector
 	{
+	public:
+		static const int MaxCapacity = 0xFFFF;
 		static_assert(std::is_trivial<T>::value, "ShortVector only supports trivial types.");
 
 	public:
@@ -41,14 +44,14 @@ namespace Mimi
 			Pointer[Count++] = val;
 		}
 
-		void ApendRange(T* data, std::uint32_t num)
+		void ApendRange(T* data, std::size_t num)
 		{
 			EnsureExtra(num);
 			std::memcpy(&Pointer[Count], data, num * sizeof(T));
-			Count += num;
+			Count += static_cast<std::uint16_t>(num);
 		}
 
-		void Insert(std::uint32_t pos, T&& val)
+		void Insert(std::size_t pos, T&& val)
 		{
 			EnsureExtra(1);
 			assert(pos <= Count && "ShortVector: insert after the end.");
@@ -57,16 +60,17 @@ namespace Mimi
 			Count += 1;
 		}
 
-		T* Emplace(std::uint32_t num = 1)
+		T* Emplace(std::size_t num = 1)
 		{
 			EnsureExtra(num);
 			T* ret = &Pointer[Count];
-			Count += num;
+			Count += static_cast<std::uint16_t>(num);
 			return ret;
 		}
 
-		void EnsureExtra(std::uint32_t num)
+		void EnsureExtra(std::size_t num)
 		{
+			assert(num < MaxCapacity - Count);
 			if (Count + num <= Capacity) return;
 			if (Capacity == 0)
 			{
@@ -89,14 +93,14 @@ namespace Mimi
 		}
 
 		//Ensure the Pointer is unchanged
-		void RemoveRange(std::uint32_t start, std::uint32_t len)
+		void RemoveRange(std::size_t start, std::size_t len)
 		{
-			assert(start + len <= Count);
+			assert(start <= Count && len <= Count - start);
 			std::memmove(&Pointer[start], &Pointer[start + len], (Count - start - len) * sizeof(T));
-			Count -= len;
+			Count -= static_cast<std::uint16_t>(len);
 		}
 
-		void RemoveAt(std::uint32_t pos)
+		void RemoveAt(std::size_t pos)
 		{
 			RemoveRange(pos, 1);
 		}
@@ -106,16 +110,16 @@ namespace Mimi
 			Count = 0;
 		}
 
-		void Shink(std::uint32_t capacity)
+		void Shink(std::size_t capacity)
 		{
-			if (capacity >= Count)
+			if (capacity < Capacity && capacity >= Count)
 			{
 				assert(capacity > 0);
 				T* newPointer = new T[capacity];
 				std::memcpy(newPointer, Pointer, Count * sizeof(T));
 				delete[] Pointer;
 				Pointer = newPointer;
-				Capacity = capacity;
+				Capacity = static_cast<std::uint16_t>(capacity);
 			}
 		}
 
@@ -129,12 +133,12 @@ namespace Mimi
 			return Pointer;
 		}
 
-		std::uint32_t GetCount()
+		std::size_t GetCount()
 		{
 			return Count;
 		}
 
-		T operator [](std::uint32_t index)
+		T operator [](std::size_t index)
 		{
 			return Pointer[index];
 		}

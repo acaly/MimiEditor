@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include <cstring>
 
 namespace Mimi
@@ -20,7 +21,7 @@ namespace Mimi
 
 		StaticBufferData* Data;
 
-		static StaticBufferData* AllocateData(std::uint32_t size)
+		static StaticBufferData* AllocateData(std::size_t size)
 		{
 			char* data = new char[sizeof(StaticBufferData) + size - 2];
 			StaticBufferData* ptr = reinterpret_cast<StaticBufferData*>(data);
@@ -95,12 +96,15 @@ namespace Mimi
 
 	class DynamicBuffer
 	{
+		static const std::size_t MaxCapacity = 0xFFFF;
+
 	public:
-		DynamicBuffer(std::uint32_t capacity)
+		DynamicBuffer(std::size_t capacity)
 		{
+			assert(capacity <= MaxCapacity);
 			Pointer = new uint8_t[capacity];
 			Length = 0;
-			Capacity = capacity;
+			Capacity = static_cast<std::uint16_t>(capacity);
 			IsExternalBuffer = false;
 		}
 
@@ -142,7 +146,7 @@ namespace Mimi
 		bool IsExternalBuffer;
 
 	public:
-		std::uint32_t GetLength()
+		std::size_t GetLength()
 		{
 			return Length;
 		}
@@ -160,9 +164,9 @@ namespace Mimi
 			}
 		}
 
-		std::uint32_t CopyTo(std::uint8_t* buffer, std::uint32_t pos, std::uint32_t len)
+		std::size_t CopyTo(std::uint8_t* buffer, std::size_t pos, std::size_t len)
 		{
-			std::uint32_t copyLen = Length - pos;
+			std::size_t copyLen = Length - pos;
 			if (len < copyLen)
 			{
 				copyLen = len;
@@ -198,16 +202,16 @@ namespace Mimi
 		}
 
 	private:
-		void EnsureInternalBuffer(std::uint32_t newSize, bool copy)
+		void EnsureInternalBuffer(std::size_t newSize, bool copy)
 		{
+			assert(newSize <= MaxCapacity);
 			if (IsExternalBuffer)
 			{
-				std::uint16_t capacity = 16;
-				while (capacity < newSize) capacity *= 2;
+				std::uint16_t capacity = static_cast<std::uint16_t>(newSize);
 				std::uint8_t* newBuffer = new std::uint8_t[capacity];
 				if (copy)
 				{
-					std::uint32_t copyLen = Length < capacity ? Length : capacity;
+					std::size_t copyLen = Length < capacity ? Length : capacity;
 					std::memcpy(newBuffer, ExternalBuffer.GetRawData(), copyLen);
 				}
 				Pointer = newBuffer;
@@ -217,12 +221,12 @@ namespace Mimi
 			}
 			else if (Capacity < newSize)
 			{
-				std::uint16_t capacity = Capacity;
-				while (capacity < newSize) capacity *= 2;
+				std::uint16_t capacity = Capacity + Capacity / 2;
+				if (capacity < newSize) capacity = static_cast<std::uint16_t>(newSize);
 				std::uint8_t* newBuffer = new std::uint8_t[capacity];
 				if (copy)
 				{
-					std::uint32_t copyLen = Length < capacity ? Length : capacity;
+					std::size_t copyLen = Length < capacity ? Length : capacity;
 					std::memcpy(newBuffer, Pointer, copyLen);
 				}
 				delete[] Pointer;
@@ -237,24 +241,25 @@ namespace Mimi
 			Delete(0, Length);
 		}
 
-		void Insert(std::uint32_t pos, const std::uint8_t* data, std::uint32_t len)
+		void Insert(std::size_t pos, const std::uint8_t* data, std::size_t len)
 		{
 			Replace(pos, 0, data, len);
 		}
 
-		void Delete(std::uint32_t pos, std::uint32_t len)
+		void Delete(std::size_t pos, std::size_t len)
 		{
 			Replace(pos, len, nullptr, 0);
 		}
 
-		void Replace(std::uint32_t pos, std::uint32_t sel, const std::uint8_t* data, std::uint32_t dataLen)
+		void Replace(std::size_t pos, std::size_t sel, const std::uint8_t* data, std::size_t dataLen)
 		{
 			assert(pos + sel <= Length);
-			EnsureInternalBuffer(Length + dataLen - sel, true);
+			assert(Length - sel + dataLen <= MaxCapacity);
+			EnsureInternalBuffer(Length - sel + dataLen, true);
 			std::memmove(&Pointer[pos + dataLen], &Pointer[pos + sel], Length - pos - sel);
 			if (dataLen) std::memcpy(&Pointer[pos], data, dataLen);
-			Length -= sel;
-			Length += dataLen;
+			Length -= static_cast<std::uint16_t>(sel);
+			Length += static_cast<std::uint16_t>(dataLen);
 		}
 
 	public:
@@ -271,16 +276,16 @@ namespace Mimi
 		}
 
 	public:
-		void SplitLeft(DynamicBuffer& other, std::uint32_t pos)
+		void SplitLeft(DynamicBuffer& other, std::size_t pos)
 		{
 			other.EnsureInternalBuffer(pos, false);
 			CopyTo(other.Pointer, 0, pos);
 			Delete(0, pos);
 		}
 
-		void SplitRight(DynamicBuffer& other, std::uint32_t pos)
+		void SplitRight(DynamicBuffer& other, std::size_t pos)
 		{
-			std::uint32_t move = Length - pos;
+			std::size_t move = Length - pos;
 			other.EnsureInternalBuffer(move, false);
 			CopyTo(other.Pointer, pos, move);
 			Delete(pos, move);

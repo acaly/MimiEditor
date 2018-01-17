@@ -17,9 +17,10 @@ Mimi::ModificationTracer::~ModificationTracer()
 	}
 }
 
-void Mimi::ModificationTracer::Insert(std::uint32_t pos, std::uint32_t len)
+void Mimi::ModificationTracer::Insert(std::size_t pos, std::size_t len)
 {
-	int cpos = static_cast<int>(pos);
+	assert(pos < MaxLength && len <= MaxLength - pos);
+	std::int32_t cpos = static_cast<std::int32_t>(pos);
 	std::int16_t change = static_cast<std::int16_t>(len);
 
 	ShortVector<Modification>& list = this->SnapshotHead->Modifications;
@@ -27,7 +28,7 @@ void Mimi::ModificationTracer::Insert(std::uint32_t pos, std::uint32_t len)
 	//Find the point to insert
 	Modification* head = list.GetPointer();
 	Modification* m = head;
-	int delta = 0;
+	std::int32_t delta = 0;
 	while (m->Change) //Not the last
 	{
 		int i = m->Position + delta;
@@ -59,9 +60,10 @@ void Mimi::ModificationTracer::Insert(std::uint32_t pos, std::uint32_t len)
 	list.Insert(m - head, { static_cast<std::uint16_t>(pos - delta), change });
 }
 
-void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
+void Mimi::ModificationTracer::Delete(std::size_t pos, std::size_t len)
 {
-	int cpos = static_cast<int>(pos);
+	assert(pos < MaxLength && len <= MaxLength - pos);
+	std::int32_t cpos = static_cast<std::int32_t>(pos);
 	std::int16_t clen = static_cast<std::int16_t>(len);
 
 	ShortVector<Modification>& list = this->SnapshotHead->Modifications;
@@ -70,20 +72,20 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 	Modification* head = list.GetPointer();
 	Modification* m = head;
 	Modification* coverStart = nullptr;
-	int delta = 0;
-	int deltaStart = 0;
-	int extraChange = 0;
+	std::int32_t delta = 0;
+	std::int32_t deltaStart = 0;
+	std::int32_t extraChange = 0;
 
 	while (m->Change) //Not the last
 	{
-		int i = m->Position + delta;
-		int oldChange = m->Change; //It can change
+		std::int32_t i = m->Position + delta;
+		std::int32_t oldChange = m->Change; //It can change
 
 		if (i > cpos + clen)
 		{
 			//Already after the range. Delete now.
 			//Delete skipped items if any
-			int insertPosition = m - head;
+			std::size_t insertPosition = m - head;
 			if (coverStart)
 			{
 				list.RemoveRange(coverStart - head, m - coverStart);
@@ -151,8 +153,8 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 				}
 				else
 				{
-					int move = cpos + clen - i;
-					int oldPosition = m->Position;
+					std::int32_t move = cpos + clen - i;
+					std::int32_t oldPosition = m->Position;
 					extraChange += move;
 					//Trim the insertion (before modifying the list).
 					m->Change -= move;
@@ -246,14 +248,14 @@ void Mimi::ModificationTracer::Delete(std::uint32_t pos, std::uint32_t len)
 		static_cast<std::int16_t>(-clen + extraChange) });
 }
 
-void Mimi::ModificationTracer::ExchangeFront(std::uint32_t oldNum)
+void Mimi::ModificationTracer::ExchangeFront(std::size_t oldNum)
 {
 	if (oldNum == 0)
 	{
 		return;
 	}
 	Snapshot* s = this->SnapshotHead;
-	for (std::uint32_t i = 1; i < oldNum; ++i)
+	for (std::size_t i = 1; i < oldNum; ++i)
 	{
 		s = s->Next;
 	}
@@ -264,23 +266,24 @@ void Mimi::ModificationTracer::ExchangeFront(std::uint32_t oldNum)
 	this->SnapshotHead = exchange;
 }
 
-void Mimi::ModificationTracer::NewSnapshot(std::uint32_t newSnapshotNum, std::uint32_t length)
+void Mimi::ModificationTracer::NewSnapshot(std::size_t newSnapshotNum, std::size_t length)
 {
+	assert(length < MaxLength);
 	this->ExchangeFront(newSnapshotNum - 1);
 	this->SnapshotHead->Modifications.Clear();
 	this->SnapshotHead->Modifications.Shink(2);
 	this->SnapshotHead->Modifications.Append({ static_cast<std::uint16_t>(length), 0 });
 }
 
-void Mimi::ModificationTracer::DisposeSnapshot(std::uint32_t oldNum, std::uint32_t num)
+void Mimi::ModificationTracer::DisposeSnapshot(std::size_t oldNum, std::size_t num)
 {
 	//Do nothing
 }
 
-void Mimi::ModificationTracer::Resize(std::uint32_t size)
+void Mimi::ModificationTracer::Resize(std::size_t size)
 {
 	Snapshot* s = this->SnapshotHead;
-	for (std::uint32_t i = 0; i < size; ++i)
+	for (std::size_t i = 0; i < size; ++i)
 	{
 		if (s == nullptr)
 		{
@@ -301,12 +304,13 @@ void Mimi::ModificationTracer::Resize(std::uint32_t size)
 	}
 }
 
-std::uint32_t Mimi::ModificationTracer::ConvertFromSnapshotSingle(Snapshot* snapshot, std::uint32_t pos, int dir)
+std::size_t Mimi::ModificationTracer::ConvertFromSnapshotSingle(Snapshot* snapshot, std::size_t pos, int dir)
 {
-	int cpos = static_cast<int>(pos);
+	assert(pos < MaxLength);
+	std::int32_t cpos = static_cast<std::int32_t>(pos);
 	Modification* head = snapshot->Modifications.GetPointer();
 	Modification* m = head;
-	int delta = 0;
+	std::int32_t delta = 0;
 	while (m->Change)
 	{
 		if (m->Position > cpos || m->Position - m->Change > cpos)
@@ -316,32 +320,32 @@ std::uint32_t Mimi::ModificationTracer::ConvertFromSnapshotSingle(Snapshot* snap
 			if (m->Change > 0)
 			{
 				//Insertion after pos.
-				return static_cast<std::uint32_t>(cpos + delta);
+				return static_cast<std::size_t>(cpos + delta);
 			}
 			else
 			{
 				if (m->Position > cpos)
 				{
 					//Deletion after pos
-					return static_cast<std::uint32_t>(cpos + delta);
+					return static_cast<std::size_t>(cpos + delta);
 				}
 				else
 				{
 					//The char is deleted.
 					if (dir == 0) return PositionDeleted;
-					if (dir < 0) return static_cast<std::uint32_t>(m->Position + delta);
+					if (dir < 0) return static_cast<std::size_t>(m->Position + delta);
 					//dir > 0
 					if (m == head ||
 						m[-1].Change < 0 ||
 						m[-1].Position != m->Position)
 					{
-						//Note that this may produce (int)-1, which gives 0xFFFFFFFF (not found).
-						return static_cast<std::uint32_t>(m->Position + delta - 1);
+						//Note that this may produce (size_t)-1, which gives 0xFFFFFFFF (not found).
+						return static_cast<std::size_t>(m->Position + delta - 1);
 					}
 					else
 					{
 						//Let it go before the adjacent insertion.
-						return static_cast<std::uint32_t>(m->Position + delta - m[-1].Change - 1);
+						return static_cast<std::size_t>(m->Position + delta - m[-1].Change - 1);
 					}
 				}
 			}
@@ -350,19 +354,19 @@ std::uint32_t Mimi::ModificationTracer::ConvertFromSnapshotSingle(Snapshot* snap
 		m += 1;
 	}
 	assert(m->Position > cpos);
-	return static_cast<std::uint32_t>(cpos + delta);
+	return static_cast<std::size_t>(cpos + delta);
 }
 
-std::uint32_t Mimi::ModificationTracer::FirstModifiedFromSnapshot(std::uint32_t snapshot)
+std::size_t Mimi::ModificationTracer::FirstModifiedFromSnapshot(std::size_t snapshot)
 {
 	Snapshot* s = this->SnapshotHead;
-	int pos = PositionDeleted;
+	std::size_t pos = PositionDeleted;
 	s = s->Next;
-	for (std::uint32_t i = 1; i < snapshot; ++i)
+	for (std::size_t i = 1; i < snapshot; ++i)
 	{
 		if (s->Modifications[0].Change != 0)
 		{
-			int newPos = s->Modifications[0].Position;
+			std::size_t newPos = s->Modifications[0].Position;
 			if (pos == PositionDeleted || newPos < pos) pos = newPos;
 		}
 		s = s->Next;
@@ -370,11 +374,11 @@ std::uint32_t Mimi::ModificationTracer::FirstModifiedFromSnapshot(std::uint32_t 
 	return pos;
 }
 
-void Mimi::ModificationTracer::MergeWith(ModificationTracer& other, std::uint32_t snapshots)
+void Mimi::ModificationTracer::MergeWith(ModificationTracer& other, std::size_t snapshots)
 {
 	Snapshot* sa = this->SnapshotHead;
 	Snapshot* sb = other.SnapshotHead;
-	for (std::uint32_t i = 0; i < snapshots; ++i)
+	for (std::size_t i = 0; i < snapshots; ++i)
 	{
 		//Find the offset for b
 		Modification* ma = sa->Modifications.GetPointer();
@@ -398,27 +402,28 @@ void Mimi::ModificationTracer::MergeWith(ModificationTracer& other, std::uint32_
 	}
 }
 
-void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::uint32_t snapshots, std::uint32_t pos)
+void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::size_t snapshots, std::size_t pos)
 {
+	assert(pos < MaxLength);
 	Snapshot* sa = this->SnapshotHead;
 	Snapshot* sb = other.SnapshotHead;
-	int p = static_cast<int>(pos);
+	std::int32_t p = static_cast<std::int32_t>(pos);
 
-	for (std::uint32_t i = 0; i < snapshots; ++i)
+	for (std::size_t i = 0; i < snapshots; ++i)
 	{
 		sb->Modifications.Clear();
 
 		Modification* heada = sa->Modifications.GetPointer();
 		Modification* ma = heada;
-		int delta = 0;
+		std::int32_t delta = 0;
 		while (true)
 		{
-			int i = ma->Position + delta;
+			std::int32_t i = ma->Position + delta;
 			if (ma->Change == 0)
 			{
 				//Split after any change.
-				int keep = p - delta;
-				int move = ma->Position - keep;
+				std::int32_t keep = p - delta;
+				std::int32_t move = ma->Position - keep;
 				assert(move > 0 && "ModificationTracer: split after end.");
 				ma->Position -= move;
 				sb->Modifications.Append({ static_cast<std::uint16_t>(move), 0 });
@@ -430,7 +435,7 @@ void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::uint32_
 				if (i >= p)
 				{
 					//Split before an insertion
-					int keep = p - delta;
+					std::int32_t keep = p - delta;
 
 					//Modify the second part and find the count
 					Modification* e = ma;
@@ -450,8 +455,8 @@ void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::uint32_
 				else if (i + ma->Change > p)
 				{
 					//Split inside an insertion
-					int move = i + ma->Change - p;
-					int keep = ma->Position;
+					std::int32_t move = i + ma->Change - p;
+					std::int32_t keep = ma->Position;
 
 					//Modify the second part and find the count
 					Modification* e = ma + 1; //skip ma
@@ -476,7 +481,7 @@ void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::uint32_
 				if (i > p)
 				{
 					//Split before an deletion (same as before insertion)
-					int keep = p - delta;
+					std::int32_t keep = p - delta;
 
 					//Modify the second part and find the count
 					Modification* e = ma;
@@ -508,10 +513,10 @@ void Mimi::ModificationTracer::SplitInto(ModificationTracer& other, std::uint32_
 	}
 }
 
-bool Mimi::ModificationTracer::CheckSequence(std::uint32_t numSnapshot, std::uint32_t rangeCheck)
+bool Mimi::ModificationTracer::CheckSequence(std::size_t numSnapshot, std::size_t rangeCheck)
 {
 	Snapshot* s = this->SnapshotHead;
-	for (std::uint32_t i = 0; i < numSnapshot; ++i)
+	for (std::size_t i = 0; i < numSnapshot; ++i)
 	{
 		Modification* m = s->Modifications.GetPointer();
 		if (m->Position > rangeCheck) return false;
