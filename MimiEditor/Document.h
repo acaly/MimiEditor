@@ -36,7 +36,7 @@ namespace Mimi
 
 	public:
 		//TODO add event filter (i.e. for Label events, filter is TextSegment*)
-		Event<LabelOwnerChangedEvent> LabelOwnerChanged;
-		Event<LabelRemovedEvent> LabelRemoved;
+		Event<LabelOwnerChangedEvent, TextSegment*> LabelOwnerChanged;
+		Event<LabelRemovedEvent, TextSegment*> LabelRemoved;
 	};
 }

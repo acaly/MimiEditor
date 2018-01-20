@@ -124,9 +124,26 @@ namespace Mimi
 	typedef unsigned int HandlerId;
 
 	//TODO multithread?
-	template <typename T>
+	template <typename T, typename F>
 	class Event final
 	{
+		struct Entry
+		{
+			IEventHandler<T> Handler;
+			F Filter;
+			Entry() = default;
+			Entry(IEventHandler<T> h, F filter)
+			{
+				Handler = std::move(h);
+				Filter = filter;
+			}
+			Entry(Entry&& e)
+			{
+				Handler = std::move(e.Handler);
+				Filter = e.Filter;
+			}
+		};
+
 	public:
 		Event() = default;
 		Event(const Event&) = delete;
@@ -136,7 +153,7 @@ namespace Mimi
 
 	private:
 		HandlerId NextId;
-		std::unordered_map<HandlerId, IEventHandler<T>> Handlers;
+		std::unordered_map<HandlerId, Entry> Handlers;
 		std::queue<HandlerId> UnusedId;
 
 	private:
@@ -162,11 +179,23 @@ namespace Mimi
 		}
 
 	public:
+		HandlerId AddHandler(IEventHandler<T> h, F filter)
+		{
+			HandlerId ret = GetFreeId();
+			Handlers.emplace(std::make_pair(ret, Entry(std::move(h), filter)));
+			return ret;
+		}
+
 		HandlerId AddHandler(IEventHandler<T> h)
 		{
 			HandlerId ret = GetFreeId();
-			Handlers[ret] = std::move(h);
+			Handlers.emplace(std::make_pair(ret, Entry(std::move(h), F())));
 			return ret;
+		}
+
+		F& HandlerFilter(HandlerId h)
+		{
+			return Handlers[h].Filter;
 		}
 
 		void RemoveHandler(HandlerId h)
@@ -179,7 +208,18 @@ namespace Mimi
 		{
 			for (auto& entry : Handlers)
 			{
-				entry.second->Invoke(e);
+				entry.second.Handler->Invoke(e);
+			}
+		}
+
+		void InvokeWithFilter(T* e, F f)
+		{
+			for (auto& entry : Handlers)
+			{
+				if (entry.second.Filter == f)
+				{
+					entry.second.Handler->Invoke(e);
+				}
 			}
 		}
 	};

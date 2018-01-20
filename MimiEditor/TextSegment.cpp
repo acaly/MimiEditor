@@ -165,16 +165,17 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 		switch (label->Type & LabelType::Topology)
 		{
 		case LabelType::Point:
+		{
 			std::uint16_t posp = label->Position;
 			if (posp >= pos && posp < pos + sel)
 			{
 				switch (label->Type & LabelType::Alignment)
 				{
 				case LabelType::Left:
-					label->Position = pos + insertLen;
+					label->Position = static_cast<std::uint16_t>(pos + insertLen);
 					break;
 				case LabelType::Right:
-					label->Position = pos;
+					label->Position = static_cast<std::uint16_t>(pos);
 					break;
 				case LabelType::Center:
 					NotifyLabelRemoved(i);
@@ -184,7 +185,9 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 					assert(!"Unknown label alignment.");
 				}
 			}
+		}
 		case LabelType::Range:
+		{
 			std::uint16_t pos1 = label[0].Position;
 			std::uint16_t pos2 = label[1].Position;
 			if (pos1 >= pos && pos2 < pos + sel)
@@ -206,6 +209,7 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 				}
 			}
 			break;
+		}
 		case LabelType::Line:
 			//Do nothing
 			break;
