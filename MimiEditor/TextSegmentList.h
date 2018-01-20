@@ -63,6 +63,9 @@ namespace Mimi
 		TextSegment* GetElementBefore(std::size_t pos);
 		TextSegment* GetElementAfter(std::size_t pos);
 
+		//0: same or error, 1: l1 is after l2, -1: l1 is before l2.
+		static int ComparePosition(TextSegmentList* l1, TextSegmentList* l2);
+
 	public:
 		void InsertElement(std::size_t pos, TextSegment* element);
 		void RemoveElement(std::size_t pos);

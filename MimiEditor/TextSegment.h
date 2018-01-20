@@ -13,7 +13,6 @@ namespace Mimi
 	class Document;
 	class TextSegment;
 	class TextSegmentList;
-	class TextSegmentRenderCache;
 
 	namespace LabelType
 	{
@@ -172,6 +171,7 @@ namespace Mimi
 	class TextSegment final
 	{
 		friend class TextSegmentList;
+		static const std::size_t MaxLength = 0xFFFF;
 
 	public:
 		TextSegment(DynamicBuffer& buffer, bool continuous, bool unfinished);
@@ -194,7 +194,6 @@ namespace Mimi
 		ShortVector<LabelData> Labels;
 
 		ActiveTextSegmentData* ActiveData;
-		TextSegmentRenderCache* RenderCache;
 		//render height?
 
 	private:
@@ -220,6 +219,9 @@ namespace Mimi
 
 		TextSegment* GetPreviousSegment();
 		TextSegment* GetNextSegment();
+
+		//0: same or error, 1: s1 is after s2, -1: s1 is before s2.
+		static int ComparePosition(TextSegment* s1, TextSegment* s2);
 
 		bool IsContinuous()
 		{
@@ -255,14 +257,8 @@ namespace Mimi
 		void Merge();
 
 	public:
-		//Replace text within the range given by a label. New content is given in a buffer.
-		//The label parameter can be either a point or range label. If the label is point,
-		//it is moved to where the replace ends. If it is range, it is updated to cover the
-		//whole content or changed to a point label depending on the option parameter.
-		//Use null buffer pointer to delete text.
-		//Return the position after the inserted content.
-		//TODO Need to update labels and prepare for undo data.
-		std::size_t ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content);
+		//Change content and update labels.
+		void ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content);
 
 		void MarkModified(std::uint32_t time)
 		{
@@ -273,10 +269,6 @@ namespace Mimi
 		}
 
 		void CheckAndMakeInactive(std::uint32_t time);
-
-	public:
-		TextSegmentRenderCache* GetRenderCache();
-		void DisposeRenderCache();
 
 	public:
 		StaticBuffer MakeSnapshot(bool resize);
@@ -349,17 +341,22 @@ namespace Mimi
 
 		bool NextLabel(std::size_t* index)
 		{
+			std::size_t len;
 			if (*index == FirstLabel())
 			{
 				*index = 0;
 			}
-			std::size_t len = GetLabelLength(ReadLabelData(*index));
-			assert(len > 0 || *index == 0);
-			do
+			else
 			{
-				*index += len;
 				len = GetLabelLength(ReadLabelData(*index));
-			} while (len == 0 && *index < Labels.GetCount());
+				*index += len;
+			}
+			len = GetLabelLength(ReadLabelData(*index));
+			while (len == 0 && *index < Labels.GetCount())
+			{
+				*index += 1;
+				len = GetLabelLength(ReadLabelData(*index));
+			}
 			return len != 0;
 		}
 
@@ -377,8 +374,8 @@ namespace Mimi
 			MoveLabels(other, 0);
 		}
 
-		void NotifyLabelOwnerChange(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
-
+		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
+		void NotifyLabelRemoved(std::size_t index);
 	public:
 		//enumerate char
 	};

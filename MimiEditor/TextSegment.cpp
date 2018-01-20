@@ -9,7 +9,6 @@ Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous, boo
 	Index = 0;
 	ContentBuffer = buffer.MakeStaticBuffer();
 	ActiveData = nullptr;
-	RenderCache = nullptr;
 }
 
 Mimi::TextSegment::TextSegment(bool continuous, bool unfinished)
@@ -19,7 +18,6 @@ Mimi::TextSegment::TextSegment(bool continuous, bool unfinished)
 	Index = 0;
 	ContentBuffer.Clear();
 	ActiveData = nullptr;
-	RenderCache = nullptr;
 }
 
 Mimi::TextSegment::~TextSegment()
@@ -31,7 +29,6 @@ Mimi::TextSegment::~TextSegment()
 	}
 	assert(ContentBuffer.IsNull());
 	assert(Labels.GetCount() == 0);
-	assert(RenderCache == nullptr); //TODO
 }
 
 Mimi::TextSegment* Mimi::TextSegment::GetPreviousSegment()
@@ -42,6 +39,16 @@ Mimi::TextSegment* Mimi::TextSegment::GetPreviousSegment()
 Mimi::TextSegment* Mimi::TextSegment::GetNextSegment()
 {
 	return Parent->GetElementAfter(Index);
+}
+
+//0: same or error, 1: s1 is after s2, -1: s1 is before s2.
+
+int Mimi::TextSegment::ComparePosition(TextSegment * s1, TextSegment * s2)
+{
+	if (s1 == s2) return 0;
+	TextSegmentList* l1 = s1->GetParent();
+	TextSegmentList* l2 = s2->GetParent();
+	return TextSegmentList::ComparePosition(l1, l2);
 }
 
 Mimi::Document* Mimi::TextSegment::GetDocument()
@@ -134,6 +141,78 @@ void Mimi::TextSegment::Merge()
 	other->Labels.Clear();
 	other->Parent->RemoveElement(other->Index);
 	delete other;
+}
+
+void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content)
+{
+	assert(IsActive());
+
+	assert(pos < ActiveData->ContentBuffer.GetLength());
+	assert(sel < ActiveData->ContentBuffer.GetLength() - pos);
+	assert(content->GetLength() < MaxLength - (ActiveData->ContentBuffer.GetLength() - sel));
+
+	std::size_t insertLen = content->GetLength();
+	//Content
+	ActiveData->ContentBuffer.Replace(pos, sel, content->GetRawData(), insertLen);
+	//Modification tracer
+	ActiveData->Modifications.Delete(pos, sel);
+	ActiveData->Modifications.Insert(pos, insertLen);
+	//Labels
+	std::size_t i = FirstLabel();
+	while (NextLabel(&i))
+	{
+		LabelData* label = ReadLabelData(i);
+		switch (label->Type & LabelType::Topology)
+		{
+		case LabelType::Point:
+			std::uint16_t posp = label->Position;
+			if (posp >= pos && posp < pos + sel)
+			{
+				switch (label->Type & LabelType::Alignment)
+				{
+				case LabelType::Left:
+					label->Position = pos + insertLen;
+					break;
+				case LabelType::Right:
+					label->Position = pos;
+					break;
+				case LabelType::Center:
+					NotifyLabelRemoved(i);
+					EraseLabelSpace(i, GetLabelLength(label));
+					break;
+				default:
+					assert(!"Unknown label alignment.");
+				}
+			}
+		case LabelType::Range:
+			std::uint16_t pos1 = label[0].Position;
+			std::uint16_t pos2 = label[1].Position;
+			if (pos1 >= pos && pos2 < pos + sel)
+			{
+				//Remove
+				NotifyLabelRemoved(i);
+				EraseLabelSpace(i, GetLabelLength(label));
+			}
+			else
+			{
+				//Update two sides
+				if (pos1 >= pos && pos1 < pos + sel)
+				{
+					label[0].Position = static_cast<std::uint16_t>(pos + insertLen);
+				}
+				if (pos2 >= pos && pos2 < pos + sel)
+				{
+					label[1].Position = static_cast<std::uint16_t>(pos);
+				}
+			}
+			break;
+		case LabelType::Line:
+			//Do nothing
+			break;
+		default:
+			assert(!"Unknown label type.");
+		}
+	}
 }
 
 void Mimi::TextSegment::CheckAndMakeInactive(std::uint32_t time)
@@ -270,7 +349,7 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 			}
 		} while (NextLabel(&i) && i <= lastIndex);
 		std::ptrdiff_t change = static_cast<std::ptrdiff_t>(alloc) - static_cast<std::ptrdiff_t>(firstIndex);
-		NotifyLabelOwnerChange(dest, begin, GetCurrentLength(), change);
+		NotifyLabelOwnerChanged(dest, begin, GetCurrentLength(), change);
 	}
 	//Move other labels.
 	i = FirstLabel();
@@ -314,14 +393,22 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 	}
 }
 
-void Mimi::TextSegment::NotifyLabelOwnerChange(TextSegment * newOwner, std::size_t begin,
+void Mimi::TextSegment::NotifyLabelOwnerChanged(TextSegment * newOwner, std::size_t begin,
 	std::size_t end, std::ptrdiff_t change)
 {
-	LabelOwnerChangeEvent e;
+	LabelOwnerChangedEvent e;
 	e.OldOwner = this;
 	e.NewOwner = newOwner;
 	e.BeginPosition = begin;
 	e.EndPosition = end;
 	e.IndexChange = change;
-	GetDocument()->LabelOwnerChange.InvokeAll(&e);
+	GetDocument()->LabelOwnerChanged.InvokeAll(&e);
+}
+
+void Mimi::TextSegment::NotifyLabelRemoved(std::size_t index)
+{
+	LabelRemovedEvent e;
+	e.Owner = this;
+	e.Index = index;
+	GetDocument()->LabelRemoved.InvokeAll(&e);
 }

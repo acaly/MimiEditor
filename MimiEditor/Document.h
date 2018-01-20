@@ -7,7 +7,7 @@ namespace Mimi
 {
 	class TextSegment;
 
-	class LabelOwnerChangeEvent
+	class LabelOwnerChangedEvent
 	{
 		friend class TextSegment;
 	private:
@@ -16,6 +16,14 @@ namespace Mimi
 		std::size_t BeginPosition;
 		std::size_t EndPosition;
 		std::ptrdiff_t IndexChange;
+	};
+
+	class LabelRemovedEvent
+	{
+		friend class TextSegment;
+	private:
+		TextSegment* Owner;
+		std::size_t Index;
 	};
 
 	class Document
@@ -27,6 +35,8 @@ namespace Mimi
 		std::size_t GetSnapshotCapacity();
 
 	public:
-		Event<LabelOwnerChangeEvent> LabelOwnerChange;
+		//TODO add event filter (i.e. for Label events, filter is TextSegment*)
+		Event<LabelOwnerChangedEvent> LabelOwnerChanged;
+		Event<LabelRemovedEvent> LabelRemoved;
 	};
 }
