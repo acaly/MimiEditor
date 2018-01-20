@@ -234,7 +234,7 @@ namespace Mimi
 		}
 
 		Document* GetDocument();
-		std::size_t GetLineNumber();
+		std::size_t GetLineIndex();
 
 		bool IsActive()
 		{

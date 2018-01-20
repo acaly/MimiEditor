@@ -11,7 +11,7 @@ namespace Mimi
 	class ShortVector
 	{
 	public:
-		static const int MaxCapacity = 0xFFFF;
+		static const std::size_t MaxCapacity = 0xFFFF;
 		static_assert(std::is_trivial<T>::value, "ShortVector only supports trivial types.");
 
 	public:

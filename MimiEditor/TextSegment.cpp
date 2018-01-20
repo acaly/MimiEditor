@@ -56,7 +56,7 @@ Mimi::Document* Mimi::TextSegment::GetDocument()
 	return Parent->GetDocument();
 }
 
-std::size_t Mimi::TextSegment::GetLineNumber()
+std::size_t Mimi::TextSegment::GetLineIndex()
 {
 	std::size_t n = Parent->GetAbsLineIndex();
 	for (std::uint16_t i = 0; i < Index; ++i)
