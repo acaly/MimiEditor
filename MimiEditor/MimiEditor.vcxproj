@@ -20,16 +20,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buffer.h" />
-    <ClInclude Include="CodePages.h" />
+    <ClInclude Include="CodePage.h" />
     <ClInclude Include="Document.h" />
     <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="IFile.h" />
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
+    <ClInclude Include="String.h" />
     <ClInclude Include="TextSegment.h" />
     <ClInclude Include="TextSegmentList.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp" />
+    <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
     <ClCompile Include="TextSegment.cpp" />
     <ClCompile Include="TextSegmentList.cpp" />

@@ -19,11 +19,11 @@
     <Filter Include="Header Files\Storage">
       <UniqueIdentifier>{b2dcf7e3-b25b-4c31-acba-380a1e5768ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Stream">
+      <UniqueIdentifier>{a73e5c3c-cdba-498d-b539-fb08639fc3a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CodePages.h">
-      <Filter>Header Files\Storage</Filter>
-    </ClInclude>
     <ClInclude Include="TextSegment.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
@@ -45,6 +45,15 @@
     <ClInclude Include="EventHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IFile.h">
+      <Filter>Header Files\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="String.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
+    <ClInclude Include="CodePage.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp">
@@ -58,6 +67,9 @@
     </ClCompile>
     <ClCompile Include="TextSegmentList.cpp">
       <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="LocalFileWindows.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
