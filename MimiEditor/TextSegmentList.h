@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
+#include <cstring>
 
 namespace Mimi
 {
@@ -39,6 +40,7 @@ namespace Mimi
 		TextSegment* GetSegmentWithLineIndex(std::size_t index);
 		DocumentPositionI ConvertDocumentI(DocumentPositionS s);
 		DocumentPositionS ConvertDocumentS(DocumentPositionI i);
+		//TODO convert data pos/char pos?
 	};
 
 	class TextSegmentList
@@ -46,13 +48,19 @@ namespace Mimi
 		friend class TextSegmentTree;
 
 	private:
+		TextSegmentList()
+			: Data() //Initialize with nullptrs
+		{
+		}
+
+	private:
 		Document* DocumentPtr;
 		TextSegmentTree* Tree;
 		TextSegmentList* ParentNode;
 		std::uint16_t Index;
 		std::uint16_t ChildrenCount;
-		std::uint32_t ElementCount;
 		std::uint32_t LineCount;
+		std::uint32_t DataLength;
 		bool IsLeaf;
 		
 		void* (Data[TextSegmentTreeFactor + 1]); //TODO ensure last is nullptr
@@ -117,6 +125,10 @@ namespace Mimi
 			{
 				p = n->Index;
 				n = n->ParentNode;
+				if (!n)
+				{
+					return nullptr;
+				}
 			}
 			if (n->IsLeaf)
 			{
@@ -137,6 +149,10 @@ namespace Mimi
 			{
 				p = n->Index;
 				n = n->ParentNode;
+				if (!n)
+				{
+					return nullptr;
+				}
 			}
 			assert(p < n->ChildrenCount - 1u);
 			if (n->IsLeaf)
@@ -175,8 +191,63 @@ namespace Mimi
 			return CompareIndex(l1->Index, l2->Index);
 		}
 
+	private:
+		void InsertPointer(std::size_t pos, void* ptr)
+		{
+			assert(ChildrenCount + 1 < TextSegmentTreeFactor);
+			std::memmove(&Data[pos + 1], &Data[pos], sizeof(void*) * (ChildrenCount - pos));
+			Data[pos] = ptr;
+			ChildrenCount += 1;
+		}
+
+		void RemovePointer(std::size_t pos)
+		{
+			std::memmove(&Data[pos], &Data[pos + 1], sizeof(void*) * (ChildrenCount - pos - 1));
+			ChildrenCount -= 1;
+			Data[ChildrenCount] = nullptr;
+		}
+
+		void MovePointers(TextSegmentList* dest, std::size_t pos, std::size_t len, std::size_t destPos)
+		{
+			assert(pos < ChildrenCount && len <= ChildrenCount - pos);
+			assert(destPos <= dest->ChildrenCount);
+			assert(len < TextSegmentTreeFactor - dest->ChildrenCount);
+
+			std::memmove(&dest->Data[destPos + len], &dest->Data[destPos],
+				sizeof(void*) * (dest->ChildrenCount - destPos));
+			std::memcpy(&dest->Data[destPos], &Data[pos], sizeof(void*) * len);
+			dest->ChildrenCount += len;
+
+			std::memmove(&Data[pos], &Data[pos + len], sizeof(void*) * (ChildrenCount - pos - len));
+			std::memset(&Data[ChildrenCount - len], 0, sizeof(void*) * len);
+			ChildrenCount -= len;
+		}
+
+		//Caller, after calling this function, must call:
+		//  returnvalue.UpdateChildrenIndex()
+		//  returnvalue.UpdateLocalCount()
+		//  this->UpdateCount() - if with following insertion/deletion
+		//  this->UpdateLocalCount() - if no insertion/deletion
+		//returnvalue is always in the same parent as this.
+		TextSegmentList* Split(std::size_t pos);
+		void Merge();
+		void CheckSplit(std::size_t index, void* newPtr);
+		void CheckMerge();
+
+		void UpdateLocalCount();
+		void UpdateCount()
+		{
+			TextSegmentList* n = this;
+			do
+			{
+				n->UpdateLocalCount();
+				n = n->ParentNode;
+			} while (n);
+		}
+		void UpdateChildrenIndex(std::size_t p = 0);
+
 	public:
 		void InsertElement(std::size_t pos, TextSegment* element);
-		void RemoveElement(std::size_t pos);
+		TextSegment* RemoveElement(std::size_t pos);
 	};
 }
