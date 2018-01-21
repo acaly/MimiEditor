@@ -213,7 +213,7 @@ void Mimi::TextSegmentList::UpdateChildrenIndex(std::size_t p)
 	{
 		for (std::size_t i = p; i < ChildrenCount; ++i)
 		{
-			DataAsElement()[i]->Index = i;
+			DataAsElement()[i]->Index = static_cast<std::uint16_t>(i);
 			DataAsElement()[i]->Parent = this;
 		}
 	}
@@ -221,7 +221,7 @@ void Mimi::TextSegmentList::UpdateChildrenIndex(std::size_t p)
 	{
 		for (std::size_t i = p; i < ChildrenCount; ++i)
 		{
-			DataAsNode()[i]->Index = i;
+			DataAsNode()[i]->Index = static_cast<std::uint16_t>(i);
 			DataAsNode()[i]->ParentNode = this;
 		}
 	}

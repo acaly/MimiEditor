@@ -6,7 +6,7 @@
 
 namespace Mimi
 {
-	const int TextSegmentTreeFactor = 64;
+	const std::size_t TextSegmentTreeFactor = 64;
 
 	class TextSegment;
 	class TextSegmentList;
@@ -216,11 +216,11 @@ namespace Mimi
 			std::memmove(&dest->Data[destPos + len], &dest->Data[destPos],
 				sizeof(void*) * (dest->ChildrenCount - destPos));
 			std::memcpy(&dest->Data[destPos], &Data[pos], sizeof(void*) * len);
-			dest->ChildrenCount += len;
+			dest->ChildrenCount += static_cast<std::uint16_t>(len);
 
 			std::memmove(&Data[pos], &Data[pos + len], sizeof(void*) * (ChildrenCount - pos - len));
 			std::memset(&Data[ChildrenCount - len], 0, sizeof(void*) * len);
-			ChildrenCount -= len;
+			ChildrenCount -= static_cast<std::uint16_t>(len);
 		}
 
 		//Caller, after calling this function, must call:
