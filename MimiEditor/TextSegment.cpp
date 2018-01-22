@@ -159,6 +159,7 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 	ActiveData->Modifications.Insert(pos, insertLen);
 	//Labels
 	std::size_t i = FirstLabel();
+	std::size_t totalLen = GetCurrentLength();
 	while (NextLabel(&i))
 	{
 		LabelData* label = ReadLabelData(i);
@@ -199,13 +200,17 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 			else
 			{
 				//Update two sides
-				if (pos1 >= pos && pos1 < pos + sel)
+				if (pos1 >= pos && pos1 < pos + sel && !(label->Type & LabelType::Continuous))
 				{
 					label[0].Position = static_cast<std::uint16_t>(pos + insertLen);
 				}
 				if (pos2 >= pos && pos2 < pos + sel)
 				{
 					label[1].Position = static_cast<std::uint16_t>(pos);
+				}
+				if (label->Type & LabelType::Unfinished)
+				{
+					label[1].Position = totalLen - 1;
 				}
 			}
 			break;

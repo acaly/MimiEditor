@@ -22,6 +22,9 @@
     <Filter Include="Header Files\Stream">
       <UniqueIdentifier>{a73e5c3c-cdba-498d-b539-fb08639fc3a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Stream">
+      <UniqueIdentifier>{50b9969a-c905-42e9-a4ae-a17e98603bf5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextSegment.h">
@@ -69,7 +72,7 @@
       <Filter>Source Files\Storage</Filter>
     </ClCompile>
     <ClCompile Include="LocalFileWindows.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Stream</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -53,27 +53,36 @@ namespace Mimi
 	//As an optimization, slot 0 and 1 are always reserved for cursor.
 	struct LabelData
 	{
-		//Tells the segment how to update the position.
-		std::uint8_t Type;
-		//Data defined by Handler to store additional data.
-		std::uint8_t Data;
 		union
 		{
+			//Line, Point, Range (head)
 			struct
 			{
+				//Tells the segment how to update the position.
+				std::uint8_t Type;
+				//Data defined by Handler to store additional data.
+				std::uint8_t Data;
 				//Index of Label handers (registered in the system).
 				std::uint16_t Handler;
 				//Position of the Label (updated by the segment).
 				std::uint16_t Position;
 			};
+			//Range (tail)
 			struct
 			{
 				//Index of Label handers (registered in the system).
 				std::uint16_t Previous;
 				//Position of the Label (updated by the segment).
 				std::uint16_t Next;
+				//Position of the Label (updated by the segment).
+				std::uint16_t Position;
 			};
-			std::uint32_t Additional;
+			//Long (additional)
+			struct
+			{
+				std::uint16_t Unused;
+				std::uint32_t Additional;
+			};
 		};
 	};
 
