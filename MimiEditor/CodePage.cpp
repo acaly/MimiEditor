@@ -50,7 +50,7 @@ namespace
 		}
 
 	public:
-		virtual int NormalWidth()
+		virtual std::size_t NormalWidth() override
 		{
 			return 1;
 		}
@@ -125,7 +125,7 @@ namespace
 	class UTF16Impl : public Mimi::CodePageImpl
 	{
 	public:
-		virtual int NormalWidth()
+		virtual std::size_t NormalWidth() override
 		{
 			return 2;
 		}
@@ -172,6 +172,7 @@ Mimi::CodePageManager* Mimi::CodePageManager::GetInstance()
 {
 	if (!Initialized)
 	{
+		Initialized = true;
 		Set(Instance.UTF8.Impl, new UTF8Impl());
 		Set(Instance.UTF16.Impl, new UTF16Impl());
 	}

@@ -14,7 +14,7 @@ namespace Mimi
 	class CodePageImpl
 	{
 	public:
-		virtual int NormalWidth() = 0;
+		virtual std::size_t NormalWidth() = 0;
 
 		//Convert a character from the code page to utf16.
 		//src: char data. This function may read a maximum of 4 bytes from here.
@@ -31,12 +31,25 @@ namespace Mimi
 
 	struct CodePage
 	{
-	private:
-		CodePageImpl* Impl = nullptr;
 		friend class CodePageManager;
 
+	private:
+		CodePageImpl* Impl = nullptr;
+		CodePage() = default;
+
 	public:
-		int NormalWidth() { return Impl->NormalWidth(); }
+		bool operator== (const CodePage& cp) const
+		{
+			return Impl == cp.Impl;
+		}
+
+		bool operator!= (const CodePage& cp) const
+		{
+			return Impl != cp.Impl;
+		}
+
+	public:
+		std::size_t NormalWidth() { return Impl->NormalWidth(); }
 
 		BufferIncrement CharToUTF16(const mchar8_t* src, char16_t* dest)
 		{
