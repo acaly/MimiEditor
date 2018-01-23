@@ -3,8 +3,8 @@ using namespace Mimi;
 
 int TestEncodingString()
 {
-	String a = String::FromUtf8(u8"ÄãºÃ123");
-	String b = String::FromUtf16(u"ÄãºÃ123");
+	String a = String::FromUtf8(u8"ä½ å¥½123");
+	String b = String::FromUtf16(u"ä½ å¥½123");
 	String c = a.ToUtf16String();
 	String d = b.ToUtf8String();
 	return 0;
