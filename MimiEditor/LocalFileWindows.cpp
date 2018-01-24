@@ -1,5 +1,6 @@
 #include "IFile.h"
 #include <utility>
+#include <cassert>
 #include <Windows.h>
 
 //C++ file stream is not designed for binary nor for string (with encoding). Use Windows API instead.
@@ -12,7 +13,7 @@ namespace
 	{
 	public:
 		HANDLE hFile;
-		std::uint32_t Size;
+		DWORD Size;
 
 	public:
 		virtual ~WindowsFileReader()
@@ -30,7 +31,8 @@ namespace
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override
 		{
 			bool ret;
-			DWORD toRead = bufferLen;
+			assert(bufferLen < Size);
+			DWORD toRead = static_cast<DWORD>(bufferLen);
 			DWORD totalRead = 0;
 			do
 			{
@@ -48,10 +50,7 @@ namespace
 
 		virtual bool Skip(std::size_t num) override
 		{
-			if (num > MAXDWORD)
-			{
-				return false;
-			}
+			assert(num < Size);
 			return ::SetFilePointer(hFile, static_cast<DWORD>(num),
 				0, FILE_CURRENT) != INVALID_SET_FILE_POINTER;
 		}
@@ -108,8 +107,9 @@ namespace
 				::CloseHandle(h);
 				return nullptr;
 			}
-			if (size.HighPart != 0)
+			if (size.HighPart != 0 || size.LowPart == INVALID_FILE_SIZE)
 			{
+				//TODO store or log the code?
 				::CloseHandle(h);
 				return nullptr;
 			}
