@@ -25,8 +25,8 @@ namespace Mimi
 		{
 			std::size_t nullLen = encoding.NormalWidth();
 			char16_t last = 0;
-			encoding.CharToUTF16(&data[len - nullLen], &last);
-			bool appendNull = last != 0;
+			BufferIncrement inc = encoding.CharToUTF16(&data[len - nullLen], &last);
+			bool appendNull = inc.Source == 0 || last != 0;
 			Length = len + (appendNull ? nullLen : 0);
 			mchar8_t* newData = new mchar8_t[Length];
 			std::memcpy(newData, data, len);
@@ -134,6 +134,12 @@ namespace Mimi
 		static String FromUtf16(const char16_t (&data)[N])
 		{
 			return String(reinterpret_cast<const mchar8_t*>(data), N * 2, CodePageManager::GetInstance()->UTF16);
+		}
+
+		static String FromUtf8Ptr(const char* data)
+		{
+			return String(reinterpret_cast<const mchar8_t*>(data), std::strlen(data),
+				CodePageManager::GetInstance()->UTF8);
 		}
 	};
 }

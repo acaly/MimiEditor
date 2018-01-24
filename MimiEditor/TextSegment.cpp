@@ -210,7 +210,7 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 				}
 				if (label->Type & LabelType::Unfinished)
 				{
-					label[1].Position = totalLen - 1;
+					label[1].Position = static_cast<std::uint16_t>(totalLen - 1);
 				}
 			}
 			break;

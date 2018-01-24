@@ -223,4 +223,78 @@ namespace Mimi
 			}
 		}
 	};
+
+	template <typename T>
+	class Event<T, void> final
+	{
+		struct Entry
+		{
+			IEventHandler<T> Handler;
+			Entry() = default;
+			Entry(IEventHandler<T> h)
+			{
+				Handler = std::move(h);
+			}
+			Entry(Entry&& e)
+			{
+				Handler = std::move(e.Handler);
+			}
+		};
+
+	public:
+		Event() = default;
+		Event(const Event&) = delete;
+		Event(Event&&) = delete;
+		Event& operator= (const Event&) = delete;
+		~Event() = default;
+
+	private:
+		HandlerId NextId;
+		std::unordered_map<HandlerId, Entry> Handlers;
+		std::queue<HandlerId> UnusedId;
+
+	private:
+		HandlerId GetFreeId()
+		{
+			if (UnusedId.empty())
+			{
+				const HandlerId Allocate = 10;
+				for (HandlerId i = 1; i < Allocate; ++i) //0 is returned
+				{
+					UnusedId.push(NextId + i);
+				}
+				HandlerId ret = NextId;
+				NextId += Allocate;
+				return ret;
+			}
+			else
+			{
+				HandlerId ret = UnusedId.front(); //I hate C++
+				UnusedId.pop();
+				return ret;
+			}
+		}
+
+	public:
+		HandlerId AddHandler(IEventHandler<T> h)
+		{
+			HandlerId ret = GetFreeId();
+			Handlers.emplace(std::make_pair(ret, Entry(std::move(h))));
+			return ret;
+		}
+
+		void RemoveHandler(HandlerId h)
+		{
+			Handlers.erase(h);
+			UnusedId.push(h);
+		}
+
+		void InvokeAll(T* e)
+		{
+			for (auto& entry : Handlers)
+			{
+				entry.second.Handler->Invoke(e);
+			}
+		}
+	};
 }
