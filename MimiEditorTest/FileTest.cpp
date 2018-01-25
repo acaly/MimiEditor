@@ -15,7 +15,7 @@ void TestReadFile()
 	unique_ptr<IFileReader> r = unique_ptr<IFileReader>(file->Read());
 	unique_ptr<uint8_t[]> buffer = unique_ptr<uint8_t[]>(new uint8_t[r->GetSize()]);
 	r->Read(buffer.get(), r->GetSize(), nullptr);
-	String str = String(buffer.get(), r->GetSize(), CodePageManager::GetInstance()->UTF8);
+	String str = String(buffer.get(), r->GetSize(), CodePageManager::UTF8);
 }
 
 int TestFile()

@@ -23,6 +23,7 @@
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Document.h" />
     <ClInclude Include="EventHandler.h" />
+    <ClInclude Include="FileTypeDetector.h" />
     <ClInclude Include="IFile.h" />
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
@@ -32,6 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp" />
+    <ClCompile Include="CodePageWindows.cpp" />
     <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
     <ClCompile Include="TextSegment.cpp" />

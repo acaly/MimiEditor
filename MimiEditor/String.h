@@ -16,17 +16,17 @@ namespace Mimi
 	{
 	public:
 		String()
-			: String(nullptr, 0, CodePageManager::GetInstance()->UTF8)
+			: Data(nullptr), Length(0), Encoding(CodePageManager::UTF8)
 		{
 		}
 
 		String(const mchar8_t* data, std::size_t len, CodePage encoding)
 			: Encoding(encoding)
 		{
-			std::size_t nullLen = encoding.NormalWidth();
-			char16_t last = 0;
-			BufferIncrement inc = encoding.CharToUTF16(&data[len - nullLen], &last);
-			bool appendNull = inc.Source == 0 || last != 0;
+			std::size_t nullLen = encoding.GetNormalWidth();
+			char16_t last[2] = {};
+			BufferIncrement inc = encoding.CharToUTF16(&data[len - nullLen], &last[0]);
+			bool appendNull = inc.Source == 0 || last[0] != 0;
 			Length = len + (appendNull ? nullLen : 0);
 			mchar8_t* newData = new mchar8_t[Length];
 			std::memcpy(newData, data, len);
@@ -54,7 +54,12 @@ namespace Mimi
 
 		String& operator= (const String& s)
 		{
+			if (Data)
+			{
+				delete[] Data;
+			}
 			CopyFrom(s);
+			return *this;
 		}
 
 		~String()
@@ -85,7 +90,7 @@ namespace Mimi
 	public:
 		String ToCodePage(CodePage cp)
 		{
-			if (Encoding != CodePageManager::GetInstance()->UTF16)
+			if (Encoding != CodePageManager::UTF16)
 			{
 				return ToUtf16String().ToCodePage(cp);
 			}
@@ -115,31 +120,41 @@ namespace Mimi
 				src += inc.Source;
 			}
 			return String(reinterpret_cast<mchar8_t*>(buffer.data()),
-				buffer.size() * 2, CodePageManager::GetInstance()->UTF16);
+				buffer.size() * 2, CodePageManager::UTF16);
 		}
 
 		String ToUtf8String()
 		{
-			return ToCodePage(CodePageManager::GetInstance()->UTF8);
+			return ToCodePage(CodePageManager::UTF8);
 		}
 
 	public:
 		template <std::size_t N>
 		static String FromUtf8(const char (&data)[N])
 		{
-			return String(reinterpret_cast<const mchar8_t*>(data), N, CodePageManager::GetInstance()->UTF8);
+			return String(reinterpret_cast<const mchar8_t*>(data), N, CodePageManager::UTF8);
 		}
 
 		template <std::size_t N>
 		static String FromUtf16(const char16_t (&data)[N])
 		{
-			return String(reinterpret_cast<const mchar8_t*>(data), N * 2, CodePageManager::GetInstance()->UTF16);
+			return String(reinterpret_cast<const mchar8_t*>(data), N * 2,
+				CodePageManager::UTF16);
 		}
 
-		static String FromUtf8Ptr(const char* data)
+		static String FromUtf8Ptr(const void* data)
 		{
-			return String(reinterpret_cast<const mchar8_t*>(data), std::strlen(data),
-				CodePageManager::GetInstance()->UTF8);
+			const char* charPtr = reinterpret_cast<const char*>(data);
+			const mchar8_t* char8Ptr = reinterpret_cast<const mchar8_t*>(data);
+			return String(char8Ptr, std::strlen(charPtr), CodePageManager::UTF8);
+		}
+
+		static String FromUtf16Ptr(const void* data)
+		{
+			const char16_t* char16Ptr = reinterpret_cast<const char16_t*>(data);
+			const mchar8_t* char8Ptr = reinterpret_cast<const mchar8_t*>(data);
+			std::size_t len = std::char_traits<char16_t>::length(char16Ptr);
+			return String(char8Ptr, len, CodePageManager::UTF16);
 		}
 	};
 }

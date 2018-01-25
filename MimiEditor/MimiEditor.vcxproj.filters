@@ -60,6 +60,9 @@
     <ClInclude Include="EventHandler.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="FileTypeDetector.h">
+      <Filter>Header Files\Stream</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp">
@@ -76,6 +79,9 @@
     </ClCompile>
     <ClCompile Include="LocalFileWindows.cpp">
       <Filter>Source Files\Stream</Filter>
+    </ClCompile>
+    <ClCompile Include="CodePageWindows.cpp">
+      <Filter>Source Files\Storage</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

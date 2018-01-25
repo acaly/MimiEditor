@@ -1,8 +1,9 @@
 #include "CodePage.h"
+#include "String.h"
 #include <locale>
 
-static bool Initialized = false;
-Mimi::CodePageManager Instance;
+extern Mimi::String UTF8Name;
+extern Mimi::String UTF16Name;
 
 namespace
 {
@@ -50,7 +51,12 @@ namespace
 		}
 
 	public:
-		virtual std::size_t NormalWidth() override
+		virtual Mimi::String GetDisplayName() override
+		{
+			return UTF8Name;
+		}
+
+		virtual std::size_t GetNormalWidth() override
 		{
 			return 1;
 		}
@@ -125,7 +131,12 @@ namespace
 	class UTF16Impl : public Mimi::CodePageImpl
 	{
 	public:
-		virtual std::size_t NormalWidth() override
+		virtual Mimi::String GetDisplayName() override
+		{
+			return UTF16Name;
+		}
+
+		virtual std::size_t GetNormalWidth() override
 		{
 			return 2;
 		}
@@ -163,18 +174,13 @@ namespace
 	};
 }
 
-static void Set(Mimi::CodePageImpl* const& cp, Mimi::CodePageImpl* impl)
-{
-	const_cast<Mimi::CodePageImpl*>(cp) = impl;
-}
+const Mimi::CodePage Mimi::CodePageManager::UTF8 = { new UTF8Impl() };
+const Mimi::CodePage Mimi::CodePageManager::UTF16 = { new UTF16Impl() };
 
-Mimi::CodePageManager* Mimi::CodePageManager::GetInstance()
+static Mimi::String UTF8Name = Mimi::String::FromUtf8("UTF-8");
+static Mimi::String UTF16Name = Mimi::String::FromUtf8("UTF-16");
+
+Mimi::String Mimi::CodePage::GetDisplayName() const
 {
-	if (!Initialized)
-	{
-		Initialized = true;
-		Set(Instance.UTF8.Impl, new UTF8Impl());
-		Set(Instance.UTF16.Impl, new UTF16Impl());
-	}
-	return &Instance;
+	return Impl->GetDisplayName();
 }

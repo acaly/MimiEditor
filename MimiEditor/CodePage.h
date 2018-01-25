@@ -1,10 +1,15 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include <string>
+#include <vector>
 
 namespace Mimi
 {
 	typedef std::uint8_t mchar8_t; //I hate C++
+
+	class String;
+	class CodePageManager;
 
 	struct BufferIncrement
 	{
@@ -15,7 +20,9 @@ namespace Mimi
 	class CodePageImpl
 	{
 	public:
-		virtual std::size_t NormalWidth() = 0;
+		virtual String GetDisplayName() = 0;
+
+		virtual std::size_t GetNormalWidth() = 0;
 
 		//Convert a character from the code page to utf16.
 		//src: char data. This function may read a maximum of 4 bytes from here.
@@ -28,15 +35,22 @@ namespace Mimi
 		virtual BufferIncrement CharFromUTF16(const char16_t* src, mchar8_t* dest) = 0;
 	};
 
-	class CodePageManager;
-
 	struct CodePage
 	{
 		friend class CodePageManager;
 
+	public:
+		CodePage() = default;
+		CodePage(CodePageImpl* impl) : Impl(impl) {}
+
 	private:
 		CodePageImpl* Impl = nullptr;
-		CodePage() = default;
+
+	public:
+		bool IsValid() const
+		{
+			return Impl != nullptr;
+		}
 
 	public:
 		bool operator== (const CodePage& cp) const
@@ -50,14 +64,19 @@ namespace Mimi
 		}
 
 	public:
-		std::size_t NormalWidth() { return Impl->NormalWidth(); }
+		String GetDisplayName() const;
 
-		BufferIncrement CharToUTF16(const mchar8_t* src, char16_t* dest)
+		std::size_t GetNormalWidth() const 
+		{
+			return Impl->GetNormalWidth();
+		}
+
+		BufferIncrement CharToUTF16(const mchar8_t* src, char16_t* dest) const
 		{
 			return Impl->CharToUTF16(src, dest);
 		}
 
-		BufferIncrement CharFromUTF16(const char16_t* src, mchar8_t* dest)
+		BufferIncrement CharFromUTF16(const char16_t* src, mchar8_t* dest) const
 		{
 			return Impl->CharFromUTF16(src, dest);
 		}
@@ -66,10 +85,11 @@ namespace Mimi
 	class CodePageManager
 	{
 	public:
-		static CodePageManager* GetInstance();
+		static CodePage GetSystemCodePage();
+		static std::vector<CodePage> ListCodePages();
 
 	public:
-		const CodePage UTF8;
-		const CodePage UTF16;
+		static const CodePage UTF8;
+		static const CodePage UTF16;
 	};
 }

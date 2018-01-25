@@ -31,7 +31,7 @@ namespace
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override
 		{
 			bool ret;
-			assert(bufferLen < Size);
+			assert(bufferLen <= Size);
 			DWORD toRead = static_cast<DWORD>(bufferLen);
 			DWORD totalRead = 0;
 			do
@@ -50,7 +50,7 @@ namespace
 
 		virtual bool Skip(std::size_t num) override
 		{
-			assert(num < Size);
+			assert(num <= Size);
 			return ::SetFilePointer(hFile, static_cast<DWORD>(num),
 				0, FILE_CURRENT) != INVALID_SET_FILE_POINTER;
 		}
