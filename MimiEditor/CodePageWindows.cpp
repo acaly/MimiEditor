@@ -159,9 +159,6 @@ namespace
 		}
 		return std::move(ret);
 	}
-
-	std::vector<CodePage> AllCodePages;
-	bool AllCodePagesInit = false;
 }
 
 Mimi::CodePage Mimi::CodePageManager::GetSystemCodePage()
@@ -172,10 +169,7 @@ Mimi::CodePage Mimi::CodePageManager::GetSystemCodePage()
 
 std::vector<Mimi::CodePage> Mimi::CodePageManager::ListCodePages()
 {
-	if (!AllCodePagesInit)
-	{
-		AllCodePages = CreateAllCodePages(AllCodePageId);
-	}
+	static std::vector<CodePage> AllCodePages = CreateAllCodePages(AllCodePageId);
 	return AllCodePages;
 }
 
