@@ -63,6 +63,9 @@
     <ClInclude Include="FileTypeDetector.h">
       <Filter>Header Files\Stream</Filter>
     </ClInclude>
+    <ClInclude Include="BinaryReader.h">
+      <Filter>Header Files\Stream</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodePage.cpp">
@@ -82,6 +85,9 @@
     </ClCompile>
     <ClCompile Include="CodePageWindows.cpp">
       <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="FileTypeDetector.cpp">
+      <Filter>Source Files\Stream</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@
 #include "CodePage.h"
 #include "IFile.h"
 #include "Buffer.h"
+#include "BinaryReader.h"
 
 namespace Mimi
 {
@@ -35,11 +36,12 @@ namespace Mimi
 		~FileTypeDetector();
 
 	private:
+		FileTypeDetectionOptions Options;
+		BinaryReader Reader;
+
+		std::unique_ptr<IFileReader> Content;
 		bool IsText;
-		std::unique_ptr<IFileReader> TextContent;
-		DynamicBuffer InternalBuffer;
 		std::size_t LineIndex;
-		std::size_t InternalBufferPointer;
 		bool Continuous;
 		bool Unfinished;
 		bool EncodingDeceided;
@@ -87,8 +89,14 @@ namespace Mimi
 		}
 
 		void ReadNextLine();
+
+		IFileReader* GetBinaryReader()
+		{
+			assert(!IsTextFile());
+			return Content.get();
+		}
 		
-	public:
-		const std::unique_ptr<IFileReader> BinaryContent;
+	private:
+		void Detect();
 	};
 }

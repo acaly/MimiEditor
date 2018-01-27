@@ -97,11 +97,13 @@ namespace Mimi
 	class DynamicBuffer
 	{
 		static const std::size_t MaxCapacity = 0xFFFF;
+		static const std::size_t MinCapacity = 32;
 
 	public:
 		DynamicBuffer(std::size_t capacity)
 		{
 			assert(capacity <= MaxCapacity);
+			if (capacity < MinCapacity) capacity = MinCapacity;
 			Pointer = new uint8_t[capacity];
 			Length = 0;
 			Capacity = static_cast<std::uint16_t>(capacity);
@@ -241,6 +243,11 @@ namespace Mimi
 			Delete(0, Length);
 		}
 
+		void Append(const std::uint8_t* data, std::size_t len)
+		{
+			Replace(Length, 0, data, len);
+		}
+
 		void Insert(std::size_t pos, const std::uint8_t* data, std::size_t len)
 		{
 			Replace(pos, 0, data, len);
@@ -262,12 +269,34 @@ namespace Mimi
 			Length += static_cast<std::uint16_t>(dataLen);
 		}
 
+		std::uint8_t* Append(std::size_t len)
+		{
+			return Replace(Length, 0, len);
+		}
+
+		std::uint8_t* Insert(std::size_t pos, std::size_t len)
+		{
+			return Replace(pos, 0, len);
+		}
+
+		std::uint8_t* Replace(std::size_t pos, std::size_t sel, std::size_t dataLen)
+		{
+			assert(pos + sel <= Length);
+			assert(Length - sel + dataLen <= MaxCapacity);
+			EnsureInternalBuffer(Length - sel + dataLen, true);
+			std::memmove(&Pointer[pos + dataLen], &Pointer[pos + sel], Length - pos - sel);
+			Length -= static_cast<std::uint16_t>(sel);
+			Length += static_cast<std::uint16_t>(dataLen);
+			return &Pointer[pos];
+		}
+
 	public:
 		void Shink()
 		{
 			if (IsExternalBuffer) return;
 			std::uint16_t capacity = Capacity;
 			while (capacity > Length + 4) capacity /= 2;
+			if (capacity < MinCapacity) capacity = MinCapacity;
 			std::uint8_t* newBuffer = new std::uint8_t[capacity];
 			std::memcpy(newBuffer, Pointer, Length);
 			delete[] Pointer;

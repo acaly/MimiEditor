@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BinaryReader.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Document.h" />
@@ -34,6 +35,7 @@
   <ItemGroup>
     <ClCompile Include="CodePage.cpp" />
     <ClCompile Include="CodePageWindows.cpp" />
+    <ClCompile Include="FileTypeDetector.cpp" />
     <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
     <ClCompile Include="TextSegment.cpp" />
