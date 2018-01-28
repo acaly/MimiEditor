@@ -198,6 +198,8 @@ namespace Mimi
 
 	public:
 		static const CodePage UTF8;
-		static const CodePage UTF16;
+		static const CodePage UTF16LE;
+		static const CodePage UTF16BE;
+		static const CodePage ASCII;
 	};
 }

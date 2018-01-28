@@ -91,7 +91,7 @@ namespace Mimi
 	public:
 		String ToCodePage(CodePage cp)
 		{
-			if (Encoding != CodePageManager::UTF16)
+			if (Encoding != CodePageManager::UTF16LE)
 			{
 				return ToUtf16String().ToCodePage(cp);
 			}
@@ -121,7 +121,7 @@ namespace Mimi
 				src += inc.Source;
 			}
 			return String(reinterpret_cast<mchar8_t*>(buffer.data()),
-				buffer.size() * 2, CodePageManager::UTF16);
+				buffer.size() * 2, CodePageManager::UTF16LE);
 		}
 
 		String ToUtf8String()
@@ -140,7 +140,7 @@ namespace Mimi
 		static String FromUtf16(const char16_t (&data)[N])
 		{
 			return String(reinterpret_cast<const mchar8_t*>(data), N * 2,
-				CodePageManager::UTF16);
+				CodePageManager::UTF16LE);
 		}
 
 		static String FromUtf8Ptr(const void* data)
@@ -155,7 +155,7 @@ namespace Mimi
 			const char16_t* char16Ptr = reinterpret_cast<const char16_t*>(data);
 			const mchar8_t* char8Ptr = reinterpret_cast<const mchar8_t*>(data);
 			std::size_t len = std::char_traits<char16_t>::length(char16Ptr);
-			return String(char8Ptr, len, CodePageManager::UTF16);
+			return String(char8Ptr, len, CodePageManager::UTF16LE);
 		}
 	};
 }
