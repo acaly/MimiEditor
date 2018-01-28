@@ -15,53 +15,13 @@ namespace
 		950,
 	};
 
-	class WindowsCodePageImpl : public CodePageImpl
+	class WindowsCodePageImpl final : public CodePageImpl16
 	{
 	private:
 		UINT CodePageId;
 		String DisplayName;
 		std::unordered_map<mchar8_t, char32_t> SingleByteChars;
 		std::unordered_set<mchar8_t> MultiByteChars;
-
-	private:
-		//TODO move the 2 functions to separate file (shared with CodePage.cpp)
-		Mimi::BufferIncrement WriteUTF16(std::uint8_t r, char32_t unicode, char16_t* dest)
-		{
-			if (unicode < 0x10000u)
-			{
-				dest[0] = static_cast<char16_t>(unicode);
-				return { r, 1 };
-			}
-			else
-			{
-				unicode -= 0x10000u;
-				dest[0] = static_cast<char16_t>(0xD800u + (unicode >> 10));
-				dest[1] = static_cast<char16_t>(0xDC00u + (unicode & 0x3FF));
-				return { r, 2 };
-			}
-		}
-
-		std::uint8_t ReadUTF16(const char16_t* src, char32_t* unicode)
-		{
-			if (src[0] >= 0xD800u && src[0] < 0xE000u)
-			{
-				if (src[0] >= 0xDC00u)
-				{
-					return 0; //not lead surrogate
-				}
-				if (src[1] < 0xDC00u || src[1] >= 0xE000u)
-				{
-					return 0; //not trail surrogate
-				}
-				*unicode = 0x10000u + ((src[0] - 0xD800u) << 10 | (src[1] - 0xDC00u));
-				return 2;
-			}
-			else
-			{
-				*unicode = src[0];
-				return 1;
-			}
-		}
 
 	public:
 		virtual String GetDisplayName() override
@@ -82,7 +42,7 @@ namespace
 				auto findSingle = SingleByteChars.find(c1);
 				if (findSingle != SingleByteChars.end())
 				{
-					return WriteUTF16(1, findSingle->second, dest);
+					return UnicodeHelper::WriteUTF16(1, findSingle->second, dest);
 				}
 			}
 
@@ -99,7 +59,7 @@ namespace
 					if (r == 1)
 					{
 						char32_t unicode;
-						if (ReadUTF16(dest, &unicode))
+						if (UnicodeHelper::ConvertUTF16To32(dest, &unicode))
 						{
 							SingleByteChars[c1] = unicode;
 						}

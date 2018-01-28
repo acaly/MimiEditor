@@ -24,9 +24,10 @@ namespace Mimi
 			: Encoding(encoding)
 		{
 			std::size_t nullLen = encoding.GetNormalWidth();
-			char16_t last[2] = {};
-			BufferIncrement inc = encoding.CharToUTF16(&data[len - nullLen], &last[0]);
-			bool appendNull = inc.Source == 0 || last[0] != 0;
+			char32_t last;
+			//TODO Possible inaccessible memory read.
+			std::uint8_t inc = encoding.CharToUTF32(&data[len - nullLen], &last);
+			bool appendNull = inc == 0 || last != 0;
 			Length = len + (appendNull ? nullLen : 0);
 			mchar8_t* newData = new mchar8_t[Length];
 			std::memcpy(newData, data, len);
