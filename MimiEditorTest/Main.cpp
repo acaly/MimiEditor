@@ -7,5 +7,5 @@ extern int TestFile();
 
 int main()
 {
-	return TestEncodingString();
+	return TestFile();
 }

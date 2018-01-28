@@ -50,7 +50,6 @@ namespace Mimi
 			std::uint8_t* space = Buffer.Append(append);
 			std::size_t r;
 			Input->Read(space, append, &r);
-			InputCount -= r;
 			InputFinished = r < append;
 		}
 
@@ -97,6 +96,7 @@ namespace Mimi
 			}
 			std::memcpy(buffer, &Buffer.GetRawData()[BufferPosition], size);
 			BufferPosition += size;
+			InputCount -= size;
 			return true;
 		}
 
@@ -107,19 +107,35 @@ namespace Mimi
 		}
 
 		template <typename T>
-		T Read()
-		{
-			static_assert(std::is_trivial<T>::value, "Read non-trivial.");
-			T ret;
-			Read(&ret, sizeof(T));
-			return ret;
-		}
-
-		template <typename T>
 		bool Read(T* ret)
 		{
 			static_assert(std::is_trivial<T>::value, "Read non-trivial.");
-			return Read(ret, sizeof(T));
+			static_assert(sizeof(T) < BufferSize, "Read type too large.");
+
+			if (InputCount < sizeof(T))
+			{
+				return false;
+			}
+			if (BufferCount() < sizeof(T))
+			{
+				Fill();
+			}
+			*ret = *reinterpret_cast<const T*>(&Buffer.GetRawData()[BufferPosition]);
+			BufferPosition += sizeof(T);
+			InputCount -= sizeof(T);
+			return true;
+		}
+
+		template <typename T>
+		T Read()
+		{
+			static_assert(std::is_trivial<T>::value, "Read non-trivial.");
+			static_assert(sizeof(T) < BufferSize, "Read type too large.");
+
+			T ret;
+			bool success = Read(&ret);
+			assert(success);
+			return ret;
 		}
 	};
 }

@@ -31,16 +31,16 @@ namespace
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override
 		{
 			bool ret;
-			assert(bufferLen <= Size);
+			assert(bufferLen <= MAXDWORD);
 			DWORD toRead = static_cast<DWORD>(bufferLen);
 			DWORD totalRead = 0;
+			DWORD numReadValue;
 			do
 			{
-				DWORD numReadValue;
 				ret = ::ReadFile(hFile, buffer, toRead, &numReadValue, 0);
 				toRead -= numReadValue;
 				totalRead += numReadValue;
-			} while (ret && toRead > 0);
+			} while (ret && toRead > 0 && numReadValue > 0);
 			if (numRead)
 			{
 				*numRead = totalRead;
