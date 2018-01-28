@@ -14,15 +14,21 @@ namespace Mimi
 	{
 		std::size_t MaxRead;
 		std::size_t MinRead;
-		std::vector<CodePage> AdditionalCodePages;
+		std::vector<CodePage> PrimaryCodePages; //Checked before utf8 & utf16
+		std::vector<CodePage> AdditionalCodePages; //Checked after utf8 & utf16
+		std::vector<char32_t> InvalidUnicode;
 	};
 
 	enum class TextFileEncoding
 	{
 		Unknown,
+		ASCII,
 		UTF8,
+		UTF8_BOM,
 		UTF16LE,
 		UTF16BE,
+		UTF16LE_BOM,
+		UTF16BE_BOM,
 		CodePage,
 	};
 
@@ -33,7 +39,7 @@ namespace Mimi
 		FileTypeDetector(const FileTypeDetector&) = delete;
 		FileTypeDetector(FileTypeDetector&&) = delete;
 		FileTypeDetector& operator= (const FileTypeDetector&) = delete;
-		~FileTypeDetector();
+		~FileTypeDetector() {}
 
 	private:
 		FileTypeDetectionOptions Options;
@@ -44,10 +50,10 @@ namespace Mimi
 		std::size_t LineIndex;
 		bool Continuous;
 		bool Unfinished;
-		bool EncodingDeceided;
-		bool CodePageDecided;
 		TextFileEncoding TextEncoding;
 		CodePage TextCodePage;
+	public:
+		DynamicBuffer CurrentLineData;
 
 	public:
 		bool IsTextFile()
@@ -74,8 +80,6 @@ namespace Mimi
 			return LineIndex;
 		}
 
-		DynamicBuffer CurrentLineData;
-
 		bool IsCurrentLineContinuous()
 		{
 			assert(IsTextFile());
@@ -88,7 +92,7 @@ namespace Mimi
 			return Unfinished;
 		}
 
-		void ReadNextLine();
+		bool ReadNextLine();
 
 		IFileReader* GetBinaryReader()
 		{
@@ -98,5 +102,8 @@ namespace Mimi
 		
 	private:
 		void Detect();
+		void SetupBinary();
+		void SetupText(TextFileEncoding e, CodePage cp, std::size_t skipBOM);
+		void SetupText(CodePage cp);
 	};
 }

@@ -43,7 +43,14 @@ namespace Mimi
 
 		void Fill()
 		{
-			assert(CanRead());
+			assert(!InputMoved);
+			if (InputFinished)
+			{
+				Buffer.Delete(0, BufferPosition);
+				BufferPosition = 0;
+				return;
+			}
+
 			std::size_t append = BufferSize - BufferPosition;
 			Buffer.Delete(0, BufferPosition);
 			BufferPosition = 0;
@@ -59,6 +66,11 @@ namespace Mimi
 		}
 
 	public:
+		std::size_t GetRemaining()
+		{
+			return InputCount;
+		}
+
 		void Reset()
 		{
 			assert(!InputMoved);
@@ -100,6 +112,21 @@ namespace Mimi
 			return true;
 		}
 
+		bool Peek(void* buffer, std::size_t size)
+		{
+			assert(size < BufferSize);
+			if (InputCount < size)
+			{
+				return false;
+			}
+			if (BufferCount() < size)
+			{
+				Fill();
+			}
+			std::memcpy(buffer, &Buffer.GetRawData()[BufferPosition], size);
+			return true;
+		}
+
 		template <typename T>
 		bool Check()
 		{
@@ -136,6 +163,74 @@ namespace Mimi
 			bool success = Read(&ret);
 			assert(success);
 			return ret;
+		}
+
+		template <typename T>
+		bool Peek(T* ret)
+		{
+			static_assert(std::is_trivial<T>::value, "Read non-trivial.");
+			static_assert(sizeof(T) < BufferSize, "Read type too large.");
+
+			if (InputCount < sizeof(T))
+			{
+				return false;
+			}
+			if (BufferCount() < sizeof(T))
+			{
+				Fill();
+			}
+			*ret = *reinterpret_cast<const T*>(&Buffer.GetRawData()[BufferPosition]);
+			return true;
+		}
+
+		template <typename T>
+		T Peek()
+		{
+			static_assert(std::is_trivial<T>::value, "Read non-trivial.");
+			static_assert(sizeof(T) < BufferSize, "Read type too large.");
+
+			T ret;
+			bool success = Peek(&ret);
+			assert(success);
+			return ret;
+		}
+
+		void SkipPeeked(std::size_t n)
+		{
+			assert(n < BufferCount());
+			BufferPosition += n;
+			InputCount -= n;
+		}
+
+		bool Skip(std::size_t n)
+		{
+			if (n > InputCount)
+			{
+				return false;
+			}
+			InputCount -= n;
+
+			//Ensure we have something to read before beginning the loop
+			if (BufferPosition == Buffer.GetLength())
+			{
+				Fill();
+			}
+			while (n)
+			{
+				std::size_t bufferCount = BufferCount();
+				assert(bufferCount > 0); //Ensure InputCount has no problem.
+				if (n > bufferCount)
+				{
+					BufferPosition += bufferCount;
+					n -= bufferCount;
+					Fill();
+				}
+				else
+				{
+					BufferPosition += n;
+					n = 0;
+				}
+			}
 		}
 	};
 }
