@@ -10,6 +10,13 @@
 
 namespace Mimi
 {
+	enum class InvalidCharAction
+	{
+		SkipByte,
+		ReplaceQuestionMark,
+		Cancel,
+	};
+
 	struct FileTypeDetectionOptions
 	{
 		std::size_t MaxRead;
@@ -17,6 +24,7 @@ namespace Mimi
 		std::vector<CodePage> PrimaryCodePages; //Checked before utf8 & utf16
 		std::vector<CodePage> AdditionalCodePages; //Checked after utf8 & utf16
 		std::vector<char32_t> InvalidUnicode;
+		InvalidCharAction InvalidCharAction;
 	};
 
 	enum class TextFileEncoding
@@ -48,10 +56,11 @@ namespace Mimi
 		BinaryReader Reader;
 
 		std::unique_ptr<IFileReader> Content;
-		bool IsText;
 		std::size_t LineIndex;
+		bool TextFile;
 		bool Continuous;
 		bool Unfinished;
+		bool Error;
 		TextFileEncoding TextEncoding;
 		CodePage TextCodePage;
 	public:
@@ -60,7 +69,7 @@ namespace Mimi
 	public:
 		bool IsTextFile()
 		{
-			return IsText;
+			return TextFile;
 		}
 
 		TextFileEncoding GetEncoding()
@@ -95,6 +104,11 @@ namespace Mimi
 		}
 
 		bool ReadNextLine();
+
+		bool IsError()
+		{
+			return Error;
+		}
 
 		IFileReader* GetBinaryReader()
 		{

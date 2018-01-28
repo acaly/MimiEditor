@@ -121,13 +121,61 @@ Mimi::FileTypeDetector::FileTypeDetector(std::unique_ptr<IFileReader> reader, Fi
 	: Reader(std::move(reader)), CurrentLineData(0)
 {
 	Options = options;
+	Error = false;
 	Detect();
 }
 
 bool Mimi::FileTypeDetector::ReadNextLine()
 {
 	assert(IsTextFile());
-	return false;
+	if (Reader.GetRemaining() == 0)
+	{
+		return false;
+	}
+	CurrentLineData.Clear();
+
+	Continuous = Unfinished;
+	Unfinished = false;
+
+	std::size_t remain;
+	while (remain = Reader.GetRemaining())
+	{
+		mchar8_t buffer[4] = {}; //Ensure empty
+		Reader.Peek(buffer, remain > 4 ? 4 : remain);
+		char32_t unicode;
+		std::uint8_t r = TextCodePage.CharToUTF32(buffer, &unicode);
+		if (r == 0 || r > remain)
+		{
+			//Invalid character.
+			switch (Options.InvalidCharAction)
+			{
+			case InvalidCharAction::Cancel:
+				Error = true;
+				return false;
+			case InvalidCharAction::ReplaceQuestionMark:
+				unicode = '?';
+				r = 1;
+				break;
+			case InvalidCharAction::SkipByte:
+				Reader.SkipPeeked(1);
+				continue; //Continue while loop
+			}
+		}
+		CurrentLineData.Append(buffer, r);
+		Reader.SkipPeeked(r);
+		//Line break: only check for '\n'
+		if (unicode == '\n')
+		{
+			break;
+		}
+		//Line too long.
+		if (CurrentLineData.GetLength() >= MaxLineLength)
+		{
+			Unfinished = true;
+			break;
+		}
+	}
+	return true;
 }
 
 void Mimi::FileTypeDetector::Detect()
@@ -231,15 +279,16 @@ void Mimi::FileTypeDetector::Detect()
 
 void Mimi::FileTypeDetector::SetupBinary()
 {
-	IsText = false;
+	TextFile = false;
+	Content = Reader.Finish();
 	Content->Reset();
 }
 
 void Mimi::FileTypeDetector::SetupText(TextFileEncoding e, CodePage cp, std::size_t skipBOM)
 {
-	IsText = true;
-	Content->Reset();
-	Content->Skip(skipBOM);
+	TextFile = true;
+	Reader.Reset();
+	Reader.Skip(skipBOM);
 	LineIndex = -1;
 	TextEncoding = e;
 	TextCodePage = cp;
@@ -247,8 +296,8 @@ void Mimi::FileTypeDetector::SetupText(TextFileEncoding e, CodePage cp, std::siz
 
 void Mimi::FileTypeDetector::SetupText(CodePage cp)
 {
-	IsText = true;
-	Content->Reset();
+	TextFile = true;
+	Reader.Reset();
 	LineIndex = -1;
 	TextEncoding = TextFileEncoding::CodePage;
 	TextCodePage = cp;
