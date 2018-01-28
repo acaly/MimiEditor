@@ -67,13 +67,13 @@ namespace
 			{
 				char32_t unicode;
 				std::uint8_t r = Encoding.CharToUTF32(ch - BufferLength + 1, &unicode);
-				if (r == 0 || r > BufferLength)
+				if (r == 0)
 				{
 					//Failed or read exceed buffer range.
 					//Read is still safe because buffer is longer (see caller).
 					return false;
 				}
-				BufferLength -= r;
+				BufferLength -= (BufferLength < r) ? BufferLength : r;
 				if (IsFirstChar)
 				{
 					if (unicode == 0xFEFF)
@@ -122,6 +122,12 @@ Mimi::FileTypeDetector::FileTypeDetector(std::unique_ptr<IFileReader> reader, Fi
 {
 	Options = options;
 	Detect();
+}
+
+bool Mimi::FileTypeDetector::ReadNextLine()
+{
+	assert(IsTextFile());
+	return false;
 }
 
 void Mimi::FileTypeDetector::Detect()
@@ -174,6 +180,9 @@ void Mimi::FileTypeDetector::Detect()
 			}
 		}
 	}
+	//Read 4 more (if not EOF)
+	std::size_t remain = Reader.GetRemaining();
+	Reader.Read(&buffer[4], remain > 4 ? 4 : remain);
 	for (std::size_t i = 0; i < check.size(); ++i)
 	{
 		if (check[i].TestLast(&buffer[3], invalid))

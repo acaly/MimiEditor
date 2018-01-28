@@ -34,6 +34,8 @@ namespace Mimi
 
 	class FileTypeDetector final
 	{
+		static const std::size_t MaxLineLength = 256;
+
 	public:
 		FileTypeDetector(std::unique_ptr<IFileReader> reader, FileTypeDetectionOptions options);
 		FileTypeDetector(const FileTypeDetector&) = delete;
