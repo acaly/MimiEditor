@@ -38,5 +38,8 @@
     <ClInclude Include="lest.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LineSeparationTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

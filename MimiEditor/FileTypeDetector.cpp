@@ -203,7 +203,7 @@ void Mimi::FileTypeDetector::Detect()
 	//Buffer is 8 but during the loop only first 4 bytes are used.
 	//Last 4 bytes are there to ensure CheckLast() only read within buffer.
 	mchar8_t buffer[8] = {};
-	std::size_t bytesRead;
+	std::size_t bytesRead = 0;
 
 	while (!(
 		check.size() == 1 && bytesRead >= Options.MinRead || //Stop when decided.
@@ -217,11 +217,12 @@ void Mimi::FileTypeDetector::Detect()
 		}
 		std::memmove(&buffer[0], &buffer[1], 3);
 		buffer[3] = Reader.Read<mchar8_t>();
+		bytesRead += 1;
 
 		//Test
 		for (std::size_t i = 0; i < check.size(); ++i)
 		{
-			if (check[i].Test(&buffer[3], invalid))
+			if (!check[i].Test(&buffer[3], invalid))
 			{
 				check.erase(check.begin() + i);
 				i -= 1;
@@ -233,7 +234,7 @@ void Mimi::FileTypeDetector::Detect()
 	Reader.Read(&buffer[4], remain > 4 ? 4 : remain);
 	for (std::size_t i = 0; i < check.size(); ++i)
 	{
-		if (check[i].TestLast(&buffer[3], invalid))
+		if (!check[i].TestLast(&buffer[3], invalid))
 		{
 			check.erase(check.begin() + i);
 			i -= 1;

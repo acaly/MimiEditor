@@ -51,7 +51,7 @@ namespace Mimi
 				return;
 			}
 
-			std::size_t append = BufferSize - BufferPosition;
+			std::size_t append = BufferSize - (Buffer.GetLength() - BufferPosition);
 			Buffer.Delete(0, BufferPosition);
 			BufferPosition = 0;
 			std::uint8_t* space = Buffer.Append(append);
@@ -231,6 +231,7 @@ namespace Mimi
 					n = 0;
 				}
 			}
+			return true;
 		}
 	};
 }
