@@ -56,7 +56,6 @@ namespace Mimi
 		BinaryReader Reader;
 
 		std::unique_ptr<IFileReader> Content;
-		std::size_t LineIndex;
 		bool TextFile;
 		bool Continuous;
 		bool Unfinished;

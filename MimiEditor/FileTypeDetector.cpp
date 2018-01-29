@@ -290,7 +290,6 @@ void Mimi::FileTypeDetector::SetupText(TextFileEncoding e, CodePage cp, std::siz
 	TextFile = true;
 	Reader.Reset();
 	Reader.Skip(skipBOM);
-	LineIndex = -1;
 	TextEncoding = e;
 	TextCodePage = cp;
 }
@@ -299,7 +298,6 @@ void Mimi::FileTypeDetector::SetupText(CodePage cp)
 {
 	TextFile = true;
 	Reader.Reset();
-	LineIndex = -1;
 	TextEncoding = TextFileEncoding::CodePage;
 	TextCodePage = cp;
 }
