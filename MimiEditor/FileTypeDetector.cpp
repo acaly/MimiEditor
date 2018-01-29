@@ -1,5 +1,6 @@
 #include "FileTypeDetector.h"
 #include <unordered_set>
+#include <algorithm>
 
 namespace
 {
@@ -198,7 +199,10 @@ void Mimi::FileTypeDetector::Detect()
 	invalid.insert(Options.InvalidUnicode.begin(), Options.InvalidUnicode.end());
 	invalid.insert(0xFEFF); //BOM at the middle or in other code page is not allowed.
 	invalid.insert(0); //null is not allowed.
-	//TODO add some invalid ASCII char for LE/BE checking
+	//For UTF-16 LE/BE checking. These values are not used in unicode.
+	invalid.insert(0x0A00); 
+	invalid.insert(0x0D00);
+	invalid.insert(0x0A0D);
 
 	//Buffer is 8 but during the loop only first 4 bytes are used.
 	//Last 4 bytes are there to ensure CheckLast() only read within buffer.
@@ -247,9 +251,26 @@ void Mimi::FileTypeDetector::Detect()
 	}
 	else
 	{
-		BasicType b = check[0].GetType();
-		bool hasBOM = check[0].HasBOM();
-		CodePage e = check[0].GetEncoding();
+		//One with BOM?
+		std::size_t index = 0;
+		std::size_t num = 0;
+		for (std::size_t i = 0; i < check.size(); ++i)
+		{
+			if (check[i].HasBOM())
+			{
+				num += 1;
+				index = i;
+			}
+		}
+		if (num != 1)
+		{
+			//If not, use the first.
+			index = 0;
+		}
+
+		BasicType b = check[index].GetType();
+		bool hasBOM = check[index].HasBOM();
+		CodePage e = check[index].GetEncoding();
 		switch (b)
 		{
 		case BasicType::ASCII:
@@ -273,6 +294,7 @@ void Mimi::FileTypeDetector::Detect()
 			SetupText(e);
 			break;
 		default:
+			assert(!"Invalid BasicType");
 			break;
 		}
 	}

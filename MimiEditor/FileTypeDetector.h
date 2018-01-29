@@ -84,12 +84,6 @@ namespace Mimi
 		}
 
 	public:
-		std::size_t GetCurrentLineIndex()
-		{
-			assert(IsTextFile());
-			return LineIndex;
-		}
-
 		bool IsCurrentLineContinuous()
 		{
 			assert(IsTextFile());
