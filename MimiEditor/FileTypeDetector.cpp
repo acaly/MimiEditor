@@ -148,10 +148,10 @@ bool Mimi::FileTypeDetector::ReadNextLine()
 		if (r == 0 || r > remain)
 		{
 			//Invalid character.
+			Error = true;
 			switch (Options.InvalidCharAction)
 			{
 			case InvalidCharAction::Cancel:
-				Error = true;
 				return false;
 			case InvalidCharAction::ReplaceQuestionMark:
 				unicode = '?';

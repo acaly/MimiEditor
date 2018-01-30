@@ -2,8 +2,9 @@
 #include "TextSegmentList.h"
 #include "Document.h"
 
-Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous, bool unfinished)
-	: Continuous(continuous, unfinished)
+Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous,
+	bool unfinished, ModifiedFlag modified)
+	: Continuous(continuous, unfinished), Modified(modified)
 {
 	Parent = nullptr;
 	Index = 0;
@@ -11,8 +12,8 @@ Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous, boo
 	ActiveData = nullptr;
 }
 
-Mimi::TextSegment::TextSegment(bool continuous, bool unfinished)
-	: Continuous(continuous, unfinished)
+Mimi::TextSegment::TextSegment(bool continuous, bool unfinished, ModifiedFlag modified)
+	: Continuous(continuous, unfinished), Modified(modified)
 {
 	Parent = nullptr;
 	Index = 0;
@@ -100,7 +101,7 @@ void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 	MakeActive();
 
 	//Make the new segment
-	TextSegment* newSegment = new TextSegment(!newLine, Continuous.IsUnfinished());
+	TextSegment* newSegment = new TextSegment(!newLine, Continuous.IsUnfinished(), ModifiedFlag::All);
 	Continuous.SetUnfinished(!newLine);
 	newSegment->ActiveData = new ActiveTextSegmentData();
 

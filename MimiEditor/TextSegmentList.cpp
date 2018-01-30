@@ -1,16 +1,6 @@
 #include "TextSegmentList.h"
 #include "TextSegment.h"
 
-Mimi::TextSegment* Mimi::TextSegmentTree::GetFirstSegment()
-{
-	TextSegmentList* node = Root;
-	while (!node->IsLeaf)
-	{
-		node = node->DataAsNode()[0];
-	}
-	return node->DataAsElement()[0];
-}
-
 Mimi::TextSegment* Mimi::TextSegmentTree::GetSegmentWithLineIndex(std::size_t index)
 {
 	TextSegmentList* node = Root;
@@ -65,6 +55,26 @@ Mimi::DocumentPositionS Mimi::TextSegmentTree::ConvertDocumentS(DocumentPosition
 	return { seg, count };
 }
 
+void Mimi::TextSegmentTree::RemoveElement(TextSegment* e)
+{
+	assert(e->GetParent()->Tree == this);
+	e->GetParent()->RemoveElement(e->GetIndexInList());
+}
+
+void Mimi::TextSegmentTree::InsertBefore(TextSegment* pos, TextSegment* newSegment)
+{
+	assert(pos->GetParent()->Tree == this);
+	assert(newSegment->GetParent() == nullptr);
+	pos->GetParent()->InsertElement(pos->GetIndexInList(), newSegment);
+}
+
+void Mimi::TextSegmentTree::InsertAfter(TextSegment* pos, TextSegment* newSegment)
+{
+	assert(pos->GetParent()->Tree == this);
+	assert(newSegment->GetParent() == nullptr);
+	pos->GetParent()->InsertElement(pos->GetIndexInList() + 1, newSegment);
+}
+
 Mimi::TextSegmentList* Mimi::TextSegmentList::Split(std::size_t pos)
 {
 	assert(pos < ChildrenCount);
@@ -81,6 +91,7 @@ Mimi::TextSegmentList* Mimi::TextSegmentList::Split(std::size_t pos)
 		newRoot->DataAsNode()[0] = this;
 		newRoot->DataLength = this->DataLength;
 		newRoot->LineCount = this->LineCount;
+		newRoot->ElementCount = this->ElementCount;
 		this->ParentNode = newRoot;
 		Tree->Root = newRoot;
 	}
@@ -91,7 +102,7 @@ Mimi::TextSegmentList* Mimi::TextSegmentList::Split(std::size_t pos)
 	newNode->Tree = this->Tree;
 	newNode->IsLeaf = this->IsLeaf;
 	newNode->ChildrenCount = 0;
-	newNode->DataLength = newNode->LineCount = 0;
+	newNode->ElementCount = newNode->DataLength = newNode->LineCount = 0;
 	MovePointers(newNode, pos, ChildrenCount - pos, 0);
 	newNode->UpdateLocalCount();
 	//newNode->UpdateChildrenIndex is delayed to caller.
@@ -178,6 +189,18 @@ void Mimi::TextSegmentList::CheckMerge()
 				last->Merge();
 			}
 		}
+		else
+		{
+			//The only child.
+			//We need (and only need) to ensure there's no nodes except root.
+			if (ChildrenCount == 0)
+			{
+				//Save it to stack as this is going to be deleted.
+				TextSegmentList* p = ParentNode;
+				p->RemovePointer(Index);
+				p->CheckMerge();
+			}
+		}
 	}
 }
 
@@ -193,17 +216,21 @@ void Mimi::TextSegmentList::UpdateLocalCount()
 		}
 		LineCount = static_cast<std::uint32_t>(l);
 		DataLength = static_cast<std::uint32_t>(d);
+		ElementCount = ChildrenCount;
 	}
 	else
 	{
-		std::size_t l = 0, d = 0;
+		std::size_t l = 0, d = 0, e = 0;
 		for (std::size_t i = 0; i < ChildrenCount; ++i)
 		{
-			l += DataAsNode()[i]->LineCount;
-			d += DataAsNode()[i]->DataLength;
+			TextSegmentList* node = DataAsNode()[i];
+			l += node->LineCount;
+			d += node->DataLength;
+			e += node->ElementCount;
 		}
 		LineCount = static_cast<std::uint32_t>(l);
 		DataLength = static_cast<std::uint32_t>(d);
+		ElementCount = static_cast<std::uint32_t>(e);
 	}
 }
 
@@ -241,6 +268,9 @@ void Mimi::TextSegmentList::InsertElement(std::size_t pos, TextSegment* element)
 Mimi::TextSegment* Mimi::TextSegmentList::RemoveElement(std::size_t pos)
 {
 	assert(IsLeaf);
+	//Don't remove the last element!
+	assert(!(ParentNode == nullptr && ChildrenCount == 1));
+
 	TextSegment* ret = DataAsElement()[pos];
 	RemovePointer(pos);
 	CheckMerge();

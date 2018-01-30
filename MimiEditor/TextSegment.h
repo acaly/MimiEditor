@@ -95,8 +95,12 @@ namespace Mimi
 	struct ModifiedFlag
 	{
 	public:
-		const std::uint8_t Open = 1, Save = 2, Snapshot = 4, Render = 8;
-		const std::uint8_t ModifyMask = Open | Save | Snapshot | Render;
+		ModifiedFlag() = default;
+		ModifiedFlag(std::uint8_t val) : Value(val) {}
+
+	public:
+		static const std::uint8_t Open = 1, Save = 2, Snapshot = 4, Render = 8;
+		static const std::uint8_t All = Open | Save | Snapshot | Render;
 
 	public:
 		std::uint8_t Value;
@@ -104,7 +108,7 @@ namespace Mimi
 	public:
 		void Modify()
 		{
-			Value |= ModifyMask;
+			Value |= All;
 		}
 
 		bool SinceOpen() { return Value | Open; }
@@ -129,7 +133,7 @@ namespace Mimi
 		}
 
 	public:
-		const std::uint8_t Continuous = 1, Unfinished = 2;
+		static const std::uint8_t Continuous = 1, Unfinished = 2;
 
 	public:
 		std::uint8_t Value;
@@ -183,8 +187,8 @@ namespace Mimi
 		static const std::size_t MaxLength = 0xFFFF;
 
 	public:
-		TextSegment(DynamicBuffer& buffer, bool continuous, bool unfinished);
-		TextSegment(bool continuous, bool unfinished);
+		TextSegment(DynamicBuffer& buffer, bool continuous, bool unfinished, ModifiedFlag modified);
+		TextSegment(bool continuous, bool unfinished, ModifiedFlag modified);
 
 		TextSegment(const TextSegment&) = delete;
 		TextSegment(TextSegment&&) = delete;

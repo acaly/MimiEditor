@@ -26,24 +26,46 @@ namespace Mimi
 	};
 
 	//A B-tree like list to storage TextSegments
-	class TextSegmentTree
+	class TextSegmentTree final
 	{
 		friend class TextSegmentList;
+		
+	public:
+		TextSegmentTree(TextSegment* element);
+		TextSegmentTree(const TextSegmentTree&) = delete;
+		TextSegmentTree(TextSegmentTree&&) = delete;
+		TextSegmentTree& operator= (const TextSegmentTree&) = delete;
+		~TextSegmentTree();
 
 	private:
 		TextSegmentList* Root;
 
 	public:
-		//index
-		//enumerate
-		TextSegment* GetFirstSegment();
+		inline TextSegment* GetFirstSegment();
+		inline TextSegment* GetLastSegment();
+		inline std::size_t GetLineCount();
+		inline std::size_t GetElementCount();
+		inline std::size_t GetDataLength();
+
 		TextSegment* GetSegmentWithLineIndex(std::size_t index);
 		DocumentPositionI ConvertDocumentI(DocumentPositionS s);
 		DocumentPositionS ConvertDocumentS(DocumentPositionI i);
 		//TODO convert data pos/char pos?
+
+	public:
+		//Public helper functions for modification
+		void RemoveElement(TextSegment* e);
+
+		void InsertBefore(TextSegment* pos, TextSegment* newSegment);
+		void InsertAfter(TextSegment* pos, TextSegment* newSegment);
+
+		void Append(TextSegment* newSegment)
+		{
+			InsertAfter(GetLastSegment(), newSegment);
+		}
 	};
 
-	class TextSegmentList
+	class TextSegmentList final
 	{
 		friend class TextSegmentTree;
 
@@ -52,6 +74,10 @@ namespace Mimi
 			: Data() //Initialize with nullptrs
 		{
 		}
+		TextSegmentList(const TextSegmentList&) = delete;
+		TextSegmentList(TextSegmentList&&) = delete;
+		TextSegmentList& operator= (const TextSegmentList&) = delete;
+		~TextSegmentList() {}
 
 	private:
 		Document* DocumentPtr;
@@ -60,6 +86,7 @@ namespace Mimi
 		std::uint16_t Index;
 		std::uint16_t ChildrenCount;
 		std::uint32_t LineCount;
+		std::uint32_t ElementCount;
 		std::uint32_t DataLength;
 		bool IsLeaf;
 		
@@ -202,6 +229,7 @@ namespace Mimi
 
 		void RemovePointer(std::size_t pos)
 		{
+			assert(ChildrenCount);
 			std::memmove(&Data[pos], &Data[pos + 1], sizeof(void*) * (ChildrenCount - pos - 1));
 			ChildrenCount -= 1;
 			Data[ChildrenCount] = nullptr;
@@ -250,4 +278,29 @@ namespace Mimi
 		void InsertElement(std::size_t pos, TextSegment* element);
 		TextSegment* RemoveElement(std::size_t pos);
 	};
+}
+
+Mimi::TextSegment* Mimi::TextSegmentTree::GetFirstSegment()
+{
+	return Root->GetFirstElement();
+}
+
+Mimi::TextSegment * Mimi::TextSegmentTree::GetLastSegment()
+{
+	return Root->GetLastElement();
+}
+
+std::size_t Mimi::TextSegmentTree::GetLineCount()
+{
+	return Root->LineCount;
+}
+
+std::size_t Mimi::TextSegmentTree::GetElementCount()
+{
+	return Root->ElementCount;
+}
+
+std::size_t Mimi::TextSegmentTree::GetDataLength()
+{
+	return Root->DataLength;
 }
