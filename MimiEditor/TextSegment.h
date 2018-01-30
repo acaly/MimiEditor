@@ -10,7 +10,7 @@
 
 namespace Mimi
 {
-	class Document;
+	class TextDocument;
 	class TextSegment;
 	class TextSegmentList;
 
@@ -246,7 +246,7 @@ namespace Mimi
 			return Continuous.IsUnfinished();
 		}
 
-		Document* GetDocument();
+		TextDocument* GetDocument();
 		std::size_t GetLineIndex();
 
 		bool IsActive()

@@ -1,6 +1,6 @@
 #include "TextSegment.h"
 #include "TextSegmentList.h"
-#include "Document.h"
+#include "TextDocument.h"
 
 Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous,
 	bool unfinished, ModifiedFlag modified)
@@ -52,7 +52,7 @@ int Mimi::TextSegment::ComparePosition(TextSegment * s1, TextSegment * s2)
 	return TextSegmentList::ComparePosition(l1, l2);
 }
 
-Mimi::Document* Mimi::TextSegment::GetDocument()
+Mimi::TextDocument* Mimi::TextSegment::GetDocument()
 {
 	return Parent->GetDocument();
 }

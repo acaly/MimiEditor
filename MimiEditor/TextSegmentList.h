@@ -11,7 +11,7 @@ namespace Mimi
 	class TextSegment;
 	class TextSegmentList;
 	class TextSegmentTree;
-	class Document;
+	class TextDocument;
 
 	struct DocumentPositionS
 	{
@@ -88,7 +88,7 @@ namespace Mimi
 		~TextSegmentList() {}
 
 	private:
-		Document* DocumentPtr;
+		TextDocument* DocumentPtr;
 		TextSegmentTree* Tree;
 		TextSegmentList* ParentNode;
 		std::uint16_t Index;
@@ -114,7 +114,7 @@ namespace Mimi
 		}
 
 	public:
-		Document* GetDocument()
+		TextDocument* GetDocument()
 		{
 			return DocumentPtr;
 		}

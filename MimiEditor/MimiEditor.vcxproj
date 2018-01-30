@@ -22,7 +22,8 @@
     <ClInclude Include="BinaryReader.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CodePage.h" />
-    <ClInclude Include="Document.h" />
+    <ClInclude Include="Snapshot.h" />
+    <ClInclude Include="TextDocument.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FileTypeDetector.h" />
     <ClInclude Include="IFile.h" />

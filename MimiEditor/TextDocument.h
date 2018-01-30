@@ -1,11 +1,14 @@
 #pragma once
 #include "EventHandler.h"
+#include "TextSegmentList.h"
 #include <cstdint>
 #include <cstddef>
 
 namespace Mimi
 {
 	class TextSegment;
+	class FileTypeDetector;
+	class Snapshot;
 
 	class LabelOwnerChangedEvent
 	{
@@ -26,17 +29,34 @@ namespace Mimi
 		std::size_t Index;
 	};
 
-	class Document
+	class TextDocument final
 	{
 		friend class TextSegment;
+
+	private:
+		TextDocument(); //Use factory
+	public:
+		TextDocument(const TextDocument&) = delete;
+		TextDocument(TextDocument&&) = delete;
+		TextDocument& operator= (const TextDocument&) = delete;
+		virtual ~TextDocument();
+
+	public:
+		TextSegmentTree SegmentTree;
 
 	public:
 		std::size_t GetSnapshotCount();
 		std::size_t GetSnapshotCapacity();
+		Snapshot* CreateSnapshot();
+		void DisposeSnapshot(Snapshot* s);
+		//TODO convert snapshot position
+		//TODO global label functions (label type reg, etc.)
 
 	public:
-		//TODO add event filter (i.e. for Label events, filter is TextSegment*)
 		Event<LabelOwnerChangedEvent, TextSegment*> LabelOwnerChanged;
 		Event<LabelRemovedEvent, TextSegment*> LabelRemoved;
+
+	public:
+		static TextDocument* CreateFromTextFile(FileTypeDetector* file);
 	};
 }
