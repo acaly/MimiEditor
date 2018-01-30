@@ -223,6 +223,7 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 			assert(!"Unknown label type.");
 		}
 	}
+	GetParent()->OnElementDataChanged();
 }
 
 void Mimi::TextSegment::CheckAndMakeInactive(std::uint32_t time)

@@ -8,7 +8,7 @@ Mimi::TextSegment* Mimi::TextSegmentTree::GetSegmentWithLineIndex(std::size_t in
 	while (!node->IsLeaf)
 	{
 		TextSegmentList** ptr = node->DataAsNode();
-		while (count + (*ptr)->LineCount < index)
+		while (count + (*ptr)->LineCount <= index)
 		{
 			count = count + (*ptr)->LineCount;
 			ptr += 1;
@@ -29,7 +29,7 @@ Mimi::TextSegment* Mimi::TextSegmentTree::GetSegmentWithLineIndex(std::size_t in
 	return *ptrs;
 }
 
-Mimi::DocumentPositionI Mimi::TextSegmentTree::ConvertDocumentI(DocumentPositionS s)
+Mimi::DocumentPositionL Mimi::TextSegmentTree::ConvertPositionToL(DocumentPositionS s)
 {
 	TextSegment* seg = s.Segment;
 	std::size_t count = s.Position;
@@ -42,10 +42,10 @@ Mimi::DocumentPositionI Mimi::TextSegmentTree::ConvertDocumentI(DocumentPosition
 	return { line, count };
 }
 
-Mimi::DocumentPositionS Mimi::TextSegmentTree::ConvertDocumentS(DocumentPositionI i)
+Mimi::DocumentPositionS Mimi::TextSegmentTree::ConvertPositionFromL(DocumentPositionL l)
 {
-	TextSegment* seg = GetSegmentWithLineIndex(i.Line);
-	std::size_t count = i.Position;
+	TextSegment* seg = GetSegmentWithLineIndex(l.Line);
+	std::size_t count = l.Position;
 	while (count < seg->GetCurrentLength())
 	{
 		assert(seg->IsContinuous());
@@ -53,6 +53,58 @@ Mimi::DocumentPositionS Mimi::TextSegmentTree::ConvertDocumentS(DocumentPosition
 		seg = seg->GetNextSegment();
 	}
 	return { seg, count };
+}
+
+Mimi::DocumentPositionD Mimi::TextSegmentTree::ConvertPositionToD(DocumentPositionS s)
+{
+	std::size_t count = s.Position;
+
+	TextSegmentList* node = s.Segment->GetParent();
+
+	TextSegment** ptrs = node->DataAsElement();
+	std::size_t index = s.Segment->GetIndexInList();
+	for (std::size_t i = 0; i < index; ++i)
+	{
+		count += ptrs[i]->GetCurrentLength();
+	}
+
+	while (node)
+	{
+		TextSegmentList** ptr = node->ParentNode->DataAsNode();
+		std::size_t index = node->Index;
+		for (std::size_t i = 0; i < index; ++i)
+		{
+			count += ptr[i]->DataLength;
+		}
+		node = node->ParentNode;
+	}
+
+	return { count };
+}
+
+Mimi::DocumentPositionS Mimi::TextSegmentTree::ConvertPositionFromD(DocumentPositionD d)
+{
+	TextSegmentList* node = Root;
+	std::size_t count = 0;
+	while (!node->IsLeaf)
+	{
+		TextSegmentList** ptr = node->DataAsNode();
+		while (count + (*ptr)->DataLength <= d.Position)
+		{
+			count = count + (*ptr)->DataLength;
+			ptr += 1;
+			assert(*ptr);
+		}
+		node = *ptr;
+	}
+	TextSegment** ptrs = node->DataAsElement();
+	while (count + (*ptrs)->GetCurrentLength() <= d.Position)
+	{
+		count += (*ptrs)->GetCurrentLength();
+		ptrs += 1;
+		assert(*ptrs);
+	}
+	return { *ptrs, d.Position - count };
 }
 
 void Mimi::TextSegmentTree::RemoveElement(TextSegment* e)

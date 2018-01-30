@@ -19,9 +19,14 @@ namespace Mimi
 		std::size_t Position;
 	};
 
-	struct DocumentPositionI
+	struct DocumentPositionL
 	{
 		std::size_t Line;
+		std::size_t Position;
+	};
+
+	struct DocumentPositionD
+	{
 		std::size_t Position;
 	};
 
@@ -48,8 +53,11 @@ namespace Mimi
 		inline std::size_t GetDataLength();
 
 		TextSegment* GetSegmentWithLineIndex(std::size_t index);
-		DocumentPositionI ConvertDocumentI(DocumentPositionS s);
-		DocumentPositionS ConvertDocumentS(DocumentPositionI i);
+
+		DocumentPositionL ConvertPositionToL(DocumentPositionS s);
+		DocumentPositionS ConvertPositionFromL(DocumentPositionL i);
+		DocumentPositionD ConvertPositionToD(DocumentPositionS s);
+		DocumentPositionS ConvertPositionFromD(DocumentPositionD i);
 		//TODO convert data pos/char pos?
 
 	public:
@@ -277,6 +285,12 @@ namespace Mimi
 	public:
 		void InsertElement(std::size_t pos, TextSegment* element);
 		TextSegment* RemoveElement(std::size_t pos);
+
+		void OnElementDataChanged()
+		{
+			assert(IsLeaf);
+			UpdateCount();
+		}
 	};
 }
 
