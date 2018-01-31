@@ -23,6 +23,7 @@
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Snapshot.h" />
+    <ClInclude Include="SnapshotPositionConverter.h" />
     <ClInclude Include="TextDocument.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FileTypeDetector.h" />
@@ -30,6 +31,7 @@
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="TextDocumentPosition.h" />
     <ClInclude Include="TextSegment.h" />
     <ClInclude Include="TextSegmentList.h" />
   </ItemGroup>
@@ -39,6 +41,8 @@
     <ClCompile Include="FileTypeDetector.cpp" />
     <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
+    <ClCompile Include="Snapshot.cpp" />
+    <ClCompile Include="SnapshotPositionConverter.cpp" />
     <ClCompile Include="TextSegment.cpp" />
     <ClCompile Include="TextSegmentList.cpp" />
   </ItemGroup>

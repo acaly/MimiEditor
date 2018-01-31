@@ -1,6 +1,7 @@
 #pragma once
 #include "EventHandler.h"
 #include "TextSegmentList.h"
+#include "ShortVector.h"
 #include <cstdint>
 #include <cstddef>
 
@@ -43,13 +44,31 @@ namespace Mimi
 
 	public:
 		TextSegmentTree SegmentTree;
+	private:
+		std::size_t SnapshotCount;
+		std::size_t SnapshotCapacity;
+		std::size_t NextSnapshotIndex;
+		ShortVector<bool> SnapshotInUse;
 
 	public:
-		std::size_t GetSnapshotCount();
-		std::size_t GetSnapshotCapacity();
+		std::size_t GetSnapshotCount()
+		{
+			return SnapshotCount;
+		}
+
+		std::size_t GetSnapshotCapacity()
+		{
+			return SnapshotCapacity;
+		}
+
 		Snapshot* CreateSnapshot();
 		void DisposeSnapshot(Snapshot* s);
-		//TODO convert snapshot position
+
+		std::size_t ConvertSnapshotToIndex(std::size_t hindex)
+		{
+			return NextSnapshotIndex - hindex - 1;
+		}
+
 		//TODO global label functions (label type reg, etc.)
 
 	public:

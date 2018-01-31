@@ -63,6 +63,9 @@ namespace Mimi
 		void DisposeSnapshot(std::size_t oldNum, std::size_t num);
 		void Resize(std::size_t newCapacity);
 
+	public:
+		std::size_t GetSnapshotLength(std::size_t snapshot);
+
 	private:
 		std::size_t ConvertFromSnapshotSingle(Snapshot* snapshot, std::size_t pos, int dir);
 		std::size_t ConvertToSnapshotSingle(Snapshot* snapshot, std::size_t pos, int dir);

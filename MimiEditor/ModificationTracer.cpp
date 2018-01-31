@@ -304,6 +304,16 @@ void Mimi::ModificationTracer::Resize(std::size_t size)
 	}
 }
 
+std::size_t Mimi::ModificationTracer::GetSnapshotLength(std::size_t snapshot)
+{
+	Snapshot* s = SnapshotHead;
+	for (std::size_t i = 0; i < snapshot; ++i)
+	{
+		s = s->Next;
+	}
+	return s->Modifications[s->Modifications.GetCount() - 1].Position;
+}
+
 std::size_t Mimi::ModificationTracer::ConvertFromSnapshotSingle(Snapshot* snapshot, std::size_t pos, int dir)
 {
 	assert(pos < MaxLength);

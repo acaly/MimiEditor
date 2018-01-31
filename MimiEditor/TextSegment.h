@@ -2,7 +2,6 @@
 #include "ShortVector.h"
 #include "ModificationTracer.h"
 #include "Buffer.h"
-#include "TextSegmentList.h"
 #include <cstdint>
 #include <cstddef>
 #include <vector>
@@ -210,14 +209,7 @@ namespace Mimi
 		//render height?
 
 	private:
-		void AddToList(TextSegmentList* list, std::size_t index)
-		{
-			assert(index < TextSegmentTreeFactor);
-			assert(Parent == nullptr);
-			assert(list != nullptr);
-			Parent = list;
-			Index = static_cast<std::uint16_t>(index);
-		}
+		void AddToList(TextSegmentList* list, std::size_t index);
 
 	public:
 		TextSegmentList* GetParent()
@@ -287,6 +279,7 @@ namespace Mimi
 		StaticBuffer MakeSnapshot(bool resize);
 		void DisposeSnapshot(std::size_t num, bool resize);
 		std::size_t ConvertSnapshotPosition(std::size_t snapshot, std::size_t pos, int dir);
+		std::size_t GetHistoryLength(std::size_t snapshot);
 
 	private:
 		static std::size_t GetLabelLength(LabelData* label)

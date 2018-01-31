@@ -1,4 +1,5 @@
 #pragma once
+#include "TextDocumentPosition.h"
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
@@ -12,23 +13,6 @@ namespace Mimi
 	class TextSegmentList;
 	class TextSegmentTree;
 	class TextDocument;
-
-	struct DocumentPositionS
-	{
-		TextSegment* Segment;
-		std::size_t Position;
-	};
-
-	struct DocumentPositionL
-	{
-		std::size_t Line;
-		std::size_t Position;
-	};
-
-	struct DocumentPositionD
-	{
-		std::size_t Position;
-	};
 
 	//A B-tree like list to storage TextSegments
 	class TextSegmentTree final

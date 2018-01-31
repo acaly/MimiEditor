@@ -32,6 +32,15 @@ Mimi::TextSegment::~TextSegment()
 	assert(Labels.GetCount() == 0);
 }
 
+void Mimi::TextSegment::AddToList(TextSegmentList* list, std::size_t index)
+{
+	assert(index < TextSegmentTreeFactor);
+	assert(Parent == nullptr);
+	assert(list != nullptr);
+	Parent = list;
+	Index = static_cast<std::uint16_t>(index);
+}
+
 Mimi::TextSegment* Mimi::TextSegment::GetPreviousSegment()
 {
 	return Parent->GetElementBefore(Index);
@@ -289,6 +298,15 @@ std::size_t Mimi::TextSegment::ConvertSnapshotPosition(std::size_t snapshot, std
 		return ActiveData->Modifications.ConvertFromSnapshot(snapshot, pos, dir);
 	}
 	return pos;
+}
+
+std::size_t Mimi::TextSegment::GetHistoryLength(std::size_t snapshot)
+{
+	if (IsActive())
+	{
+		return ActiveData->Modifications.GetSnapshotLength(snapshot);
+	}
+	return GetCurrentLength();
 }
 
 void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
