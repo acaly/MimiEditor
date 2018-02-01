@@ -28,12 +28,12 @@
     <Filter Include="Header Files\Common">
       <UniqueIdentifier>{a4dc212f-5e7c-49ea-9f90-baca700c1626}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{d06b5a57-2f29-4c36-ba22-f630d34af64e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextSegment.h">
-      <Filter>Header Files\Storage</Filter>
-    </ClInclude>
-    <ClInclude Include="ShortVector.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
     <ClInclude Include="ModificationTracer.h">
@@ -47,9 +47,6 @@
     </ClInclude>
     <ClInclude Include="IFile.h">
       <Filter>Header Files\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="CodePage.h">
-      <Filter>Header Files\Storage</Filter>
     </ClInclude>
     <ClInclude Include="String.h">
       <Filter>Header Files\Common</Filter>
@@ -75,11 +72,14 @@
     <ClInclude Include="TextDocumentPosition.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
+    <ClInclude Include="ShortVector.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="CodePage.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CodePage.cpp">
-      <Filter>Source Files\Storage</Filter>
-    </ClCompile>
     <ClCompile Include="ModificationTracer.cpp">
       <Filter>Source Files\Storage</Filter>
     </ClCompile>
@@ -103,6 +103,9 @@
     </ClCompile>
     <ClCompile Include="SnapshotPositionConverter.cpp">
       <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="CodePage.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
