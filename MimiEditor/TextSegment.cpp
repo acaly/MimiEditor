@@ -25,11 +25,11 @@ Mimi::TextSegment::~TextSegment()
 {
 	if (ActiveData)
 	{
-		assert(ActiveData->SnapshotCache.IsNull());
+		ActiveData->SnapshotCache.TryClearRef();
 		delete ActiveData;
 	}
-	assert(ContentBuffer.IsNull());
-	assert(Labels.GetCount() == 0);
+	ContentBuffer.TryClearRef();
+	Labels.Clear();
 }
 
 void Mimi::TextSegment::AddToList(TextSegmentList* list, std::size_t index)

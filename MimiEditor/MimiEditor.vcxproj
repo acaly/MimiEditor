@@ -43,6 +43,7 @@
     <ClCompile Include="ModificationTracer.cpp" />
     <ClCompile Include="Snapshot.cpp" />
     <ClCompile Include="SnapshotPositionConverter.cpp" />
+    <ClCompile Include="TextDocument.cpp" />
     <ClCompile Include="TextSegment.cpp" />
     <ClCompile Include="TextSegmentList.cpp" />
   </ItemGroup>

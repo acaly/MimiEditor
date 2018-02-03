@@ -1,6 +1,26 @@
 #include "TextSegmentList.h"
 #include "TextSegment.h"
 
+Mimi::TextSegmentTree::TextSegmentTree(TextDocument* document, TextSegment* element)
+{
+	TextSegmentList* root = new TextSegmentList();
+	Root = root;
+
+	root->DocumentPtr = document;
+	root->Index = 0;
+	root->IsLeaf = true;
+	root->ParentNode = nullptr;
+	root->Tree = this;
+	root->InsertElement(0, element);
+}
+
+Mimi::TextSegmentTree::~TextSegmentTree()
+{
+	assert(Root);
+	delete Root;
+	Root = nullptr;
+}
+
 Mimi::TextSegment* Mimi::TextSegmentTree::GetSegmentWithLineIndex(std::size_t index)
 {
 	TextSegmentList* node = Root;
@@ -125,6 +145,24 @@ void Mimi::TextSegmentTree::InsertAfter(TextSegment* pos, TextSegment* newSegmen
 	assert(pos->GetParent()->Tree == this);
 	assert(newSegment->GetParent() == nullptr);
 	pos->GetParent()->InsertElement(pos->GetIndexInList() + 1, newSegment);
+}
+
+Mimi::TextSegmentList::~TextSegmentList()
+{
+	for (std::size_t i = 0; i < ChildrenCount; ++i)
+	{
+		if (IsLeaf)
+		{
+			delete DataAsElement()[i];
+			DataAsElement()[i] = nullptr;
+		}
+		else
+		{
+			delete DataAsNode()[i];
+			DataAsNode()[i] = nullptr;
+		}
+	}
+	ChildrenCount = 0;
 }
 
 Mimi::TextSegmentList* Mimi::TextSegmentList::Split(std::size_t pos)
@@ -310,11 +348,7 @@ void Mimi::TextSegmentList::InsertElement(std::size_t pos, TextSegment* element)
 {
 	assert(IsLeaf);
 	CheckSplit(pos, element);
-	//CheckSplit has updated local count. Continue from parent.
-	if (ParentNode)
-	{
-		ParentNode->UpdateCount();
-	}
+	UpdateCount();
 }
 
 Mimi::TextSegment* Mimi::TextSegmentList::RemoveElement(std::size_t pos)

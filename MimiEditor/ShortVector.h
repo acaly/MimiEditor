@@ -138,7 +138,7 @@ namespace Mimi
 			return Count;
 		}
 
-		T operator [](std::size_t index)
+		T& operator [](std::size_t index)
 		{
 			return Pointer[index];
 		}

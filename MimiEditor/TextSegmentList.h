@@ -20,7 +20,7 @@ namespace Mimi
 		friend class TextSegmentList;
 		
 	public:
-		TextSegmentTree(TextSegment* element);
+		TextSegmentTree(TextDocument* document, TextSegment* element);
 		TextSegmentTree(const TextSegmentTree&) = delete;
 		TextSegmentTree(TextSegmentTree&&) = delete;
 		TextSegmentTree& operator= (const TextSegmentTree&) = delete;
@@ -69,7 +69,7 @@ namespace Mimi
 		TextSegmentList(const TextSegmentList&) = delete;
 		TextSegmentList(TextSegmentList&&) = delete;
 		TextSegmentList& operator= (const TextSegmentList&) = delete;
-		~TextSegmentList() {}
+		~TextSegmentList();
 
 	private:
 		TextDocument* DocumentPtr;
