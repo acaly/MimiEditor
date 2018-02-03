@@ -11,6 +11,7 @@ namespace Mimi
 	class TextSegment;
 	class FileTypeDetector;
 	class Snapshot;
+	class DynamicBuffer;
 
 	class LabelOwnerChangedEvent
 	{
@@ -47,6 +48,7 @@ namespace Mimi
 		virtual ~TextDocument();
 
 	public:
+		//Content access.
 		TextSegmentTree SegmentTree;
 		CodePage TextEncoding;
 
@@ -57,6 +59,7 @@ namespace Mimi
 		ShortVector<bool> SnapshotInUse;
 
 	public:
+		//Snapshot manipulation.
 		std::size_t GetSnapshotCount()
 		{
 			return SnapshotCount;
@@ -75,11 +78,18 @@ namespace Mimi
 			return NextSnapshotIndex - hindex - 1;
 		}
 
-		//TODO global label functions (label type reg, etc.)
-
 	public:
+		//Label manipulation.
 		Event<LabelOwnerChangedEvent, TextSegment*> LabelOwnerChanged;
 		Event<LabelRemovedEvent, TextSegment*> LabelRemoved;
+
+		//TODO global label functions (label type reg, etc.)
+		//TODO label manipulation (add, remove, move, etc.)
+
+	public:
+		//Inter-segment modification.
+		DocumentPositionS DeleteRange(DocumentPositionS begin, DocumentPositionS end);
+		void Insert(DocumentPositionS pos, DynamicBuffer& content, DocumentPositionS);
 
 	public:
 		static TextDocument* CreateFromTextFile(FileTypeDetector* file);

@@ -31,6 +31,9 @@
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="TextDocumentLabelAccess.h" />
+    <ClInclude Include="TextDocumentLabelIterator.h" />
+    <ClInclude Include="TextDocumentLabelTracer.h" />
     <ClInclude Include="TextDocumentPosition.h" />
     <ClInclude Include="TextSegment.h" />
     <ClInclude Include="TextSegmentList.h" />

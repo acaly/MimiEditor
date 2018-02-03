@@ -69,11 +69,8 @@ namespace Mimi
 			//Range (tail)
 			struct
 			{
-				//Index of Label handers (registered in the system).
 				std::uint16_t Previous;
-				//Position of the Label (updated by the segment).
 				std::uint16_t Next;
-				//Position of the Label (updated by the segment).
 				std::uint16_t Position;
 			};
 			//Long (additional)
@@ -383,7 +380,9 @@ namespace Mimi
 
 		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
 		void NotifyLabelRemoved(std::size_t index);
+
 	public:
-		//enumerate char
+		std::size_t AddLabel(std::uint16_t handler);
+		void RemoveLabel(std::size_t index);
 	};
 }

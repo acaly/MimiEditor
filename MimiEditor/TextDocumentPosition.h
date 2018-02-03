@@ -21,4 +21,10 @@ namespace Mimi
 	{
 		std::size_t Position;
 	};
+
+	struct DocumentLabelIndex
+	{
+		TextSegment* Segment;
+		std::size_t Index;
+	};
 }

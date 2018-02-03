@@ -78,6 +78,15 @@
     <ClInclude Include="CodePage.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="TextDocumentLabelIterator.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
+    <ClInclude Include="TextDocumentLabelTracer.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
+    <ClInclude Include="TextDocumentLabelAccess.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">
