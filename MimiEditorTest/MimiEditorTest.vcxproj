@@ -128,6 +128,7 @@
     </ClCompile>
     <ClCompile Include="ModificationTracerTest.cpp" />
     <ClCompile Include="FileTest.cpp" />
+    <ClCompile Include="TextDocumentTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lest.hpp" />

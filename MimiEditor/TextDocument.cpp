@@ -1,6 +1,7 @@
 #include "TextDocument.h"
 #include "Snapshot.h"
 #include "TextSegment.h"
+#include "FileTypeDetector.h"
 
 Mimi::TextDocument::~TextDocument()
 {
@@ -56,4 +57,23 @@ void Mimi::TextDocument::DisposeSnapshot(Snapshot* s)
 	} while (segment);
 
 	s->ClearBuffer();
+}
+
+Mimi::TextDocument* Mimi::TextDocument::CreateFromTextFile(FileTypeDetector* file)
+{
+	assert(file->ReadNextLine());
+	assert(!file->IsCurrentLineContinuous());
+	TextSegment* first = new TextSegment(file->CurrentLineData,
+		false, file->IsCurrentLineUnfinished(), ModifiedFlag::NotModified);
+
+	TextDocument* doc = new TextDocument(first);
+
+	while (file->ReadNextLine())
+	{
+		doc->SegmentTree.Append(new TextSegment(file->CurrentLineData,
+			file->IsCurrentLineUnfinished(),
+			file->IsCurrentLineContinuous(), ModifiedFlag::NotModified));
+	}
+
+	return doc;
 }

@@ -2,6 +2,7 @@
 #include "EventHandler.h"
 #include "TextSegmentList.h"
 #include "ShortVector.h"
+#include "CodePage.h"
 #include <cstdint>
 #include <cstddef>
 
@@ -35,7 +36,10 @@ namespace Mimi
 		friend class TextSegment;
 
 	private:
-		TextDocument(); //Use factory
+		TextDocument(TextSegment* firstSegment) //Use factory
+			: SegmentTree(this, firstSegment)
+		{
+		}
 	public:
 		TextDocument(const TextDocument&) = delete;
 		TextDocument(TextDocument&&) = delete;
@@ -44,6 +48,8 @@ namespace Mimi
 
 	public:
 		TextSegmentTree SegmentTree;
+		CodePage TextEncoding;
+
 	private:
 		std::size_t SnapshotCount;
 		std::size_t SnapshotCapacity;

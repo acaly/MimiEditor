@@ -60,6 +60,7 @@ namespace Mimi
 		bool Continuous;
 		bool Unfinished;
 		bool Error;
+		bool TextReadEOS;
 		TextFileEncoding TextEncoding;
 		CodePage TextCodePage;
 	public:

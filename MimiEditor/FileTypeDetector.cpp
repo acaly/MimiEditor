@@ -123,13 +123,14 @@ Mimi::FileTypeDetector::FileTypeDetector(std::unique_ptr<IFileReader> reader, Fi
 {
 	Options = options;
 	Error = false;
+	TextReadEOS = false;
 	Detect();
 }
 
 bool Mimi::FileTypeDetector::ReadNextLine()
 {
 	assert(IsTextFile());
-	if (Reader.GetRemaining() == 0)
+	if (TextReadEOS)
 	{
 		return false;
 	}
@@ -139,6 +140,7 @@ bool Mimi::FileTypeDetector::ReadNextLine()
 	Unfinished = false;
 
 	std::size_t remain;
+	bool readNotFinished = false;
 	while (remain = Reader.GetRemaining())
 	{
 		mchar8_t buffer[4] = {}; //Ensure empty
@@ -167,15 +169,21 @@ bool Mimi::FileTypeDetector::ReadNextLine()
 		//Line break: only check for '\n'
 		if (unicode == '\n')
 		{
+			readNotFinished = true;
 			break;
 		}
 		//Line too long.
 		if (CurrentLineData.GetLength() >= MaxLineLength)
 		{
 			Unfinished = true;
+			readNotFinished = true;
 			break;
 		}
 	}
+	//Instead of check after exiting the loop, we must set the flag before
+	//exiting, beacuse even if the file ends with '\n', we must give an
+	//empty line after it.
+	TextReadEOS = !readNotFinished;
 	return true;
 }
 

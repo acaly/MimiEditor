@@ -100,6 +100,7 @@ namespace Mimi
 	public:
 		static const std::uint8_t Open = 1, Save = 2, Snapshot = 4, Render = 8;
 		static const std::uint8_t All = Open | Save | Snapshot | Render;
+		static const std::uint8_t NotModified = 0;
 
 	public:
 		std::uint8_t Value;
