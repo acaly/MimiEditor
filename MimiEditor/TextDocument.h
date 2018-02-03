@@ -17,12 +17,16 @@ namespace Mimi
 	class LabelOwnerChangedEvent
 	{
 		friend class TextSegment;
+
 	private:
 		TextSegment* OldOwner;
 		TextSegment* NewOwner;
 		std::size_t BeginPosition;
 		std::size_t EndPosition;
 		std::ptrdiff_t IndexChange;
+
+	public:
+		bool Update(DocumentLabelIndex* label);
 	};
 
 	class LabelRemovedEvent
@@ -31,6 +35,12 @@ namespace Mimi
 	private:
 		TextSegment* Owner;
 		std::size_t Index;
+
+	public:
+		bool IsRemoved(DocumentLabelIndex label)
+		{
+			return label.Segment == Owner && label.Index == Index;
+		}
 	};
 
 	class TextDocument final

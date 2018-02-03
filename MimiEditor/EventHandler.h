@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <queue>
 
 namespace Mimi
@@ -249,9 +250,11 @@ namespace Mimi
 		~Event() = default;
 
 	private:
-		HandlerId NextId;
+		HandlerId NextId = 0;
 		std::unordered_map<HandlerId, Entry> Handlers;
 		std::queue<HandlerId> UnusedId;
+		std::unordered_set<HandlerId> RemovedHandler;
+		bool IsInIteration = false;
 
 	private:
 		HandlerId GetFreeId()
@@ -278,6 +281,7 @@ namespace Mimi
 	public:
 		HandlerId AddHandler(IEventHandler<T> h)
 		{
+			assert(!IsInIteration);
 			HandlerId ret = GetFreeId();
 			Handlers.emplace(std::make_pair(ret, Entry(std::move(h))));
 			return ret;
@@ -285,16 +289,33 @@ namespace Mimi
 
 		void RemoveHandler(HandlerId h)
 		{
-			Handlers.erase(h);
-			UnusedId.push(h);
+			if (IsInIteration)
+			{
+				RemovedHandler.insert(h);
+			}
+			else
+			{
+				Handlers.erase(h);
+				UnusedId.push(h);
+			}
 		}
 
 		void InvokeAll(T* e)
 		{
+			IsInIteration = true;
 			for (auto& entry : Handlers)
 			{
-				entry.second.Handler->Invoke(e);
+				if (RemovedHandler.find(entry.first) == RemovedHandler.end())
+				{
+					entry.second.Handler->Invoke(e);
+				}
 			}
+			IsInIteration = false;
+			for (auto& h : RemovedHandler)
+			{
+				RemoveHandler(h);
+			}
+			RemovedHandler.clear();
 		}
 	};
 }

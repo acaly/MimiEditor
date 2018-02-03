@@ -171,3 +171,19 @@ Mimi::TextDocument* Mimi::TextDocument::CreateFromTextFile(FileTypeDetector* fil
 
 	return doc;
 }
+
+bool Mimi::LabelOwnerChangedEvent::Update(DocumentLabelIndex * label)
+{
+	if (label->Segment != OldOwner)
+	{
+		return false;
+	}
+	std::size_t pos = label->Segment->ReadLabelData(label->Index)->Position;
+	if (pos >= BeginPosition && pos < EndPosition)
+	{
+		label->Segment = NewOwner;
+		label->Index += IndexChange;
+		return true;
+	}
+	return false;
+}
