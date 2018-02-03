@@ -87,6 +87,9 @@
     <ClInclude Include="TextDocumentLabelAccess.h">
       <Filter>Header Files\Storage</Filter>
     </ClInclude>
+    <ClInclude Include="Clock.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">
@@ -118,6 +121,9 @@
     </ClCompile>
     <ClCompile Include="TextDocument.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClockWindows.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

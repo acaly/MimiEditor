@@ -2,6 +2,7 @@
 #include "ShortVector.h"
 #include "ModificationTracer.h"
 #include "Buffer.h"
+#include "TextDocumentPosition.h"
 #include <cstdint>
 #include <cstddef>
 #include <vector>
@@ -272,6 +273,18 @@ namespace Mimi
 		}
 
 		void CheckAndMakeInactive(std::uint32_t time);
+
+		DocumentPositionS InsertLineBreak(std::size_t pos)
+		{
+			Split(pos, true);
+			return { GetNextSegment(), 0 };
+		}
+
+		void EnsureInsertionSize(std::size_t pos, std::size_t size,
+			DocumentPositionS* before = nullptr, DocumentPositionS* after = nullptr);
+
+		bool HasLineBreak();
+		void CheckLineBreak();
 
 	public:
 		StaticBuffer MakeSnapshot(bool resize);

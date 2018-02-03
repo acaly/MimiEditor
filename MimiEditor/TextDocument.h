@@ -3,6 +3,7 @@
 #include "TextSegmentList.h"
 #include "ShortVector.h"
 #include "CodePage.h"
+#include "Clock.h"
 #include <cstdint>
 #include <cstddef>
 
@@ -57,6 +58,7 @@ namespace Mimi
 		std::size_t SnapshotCapacity;
 		std::size_t NextSnapshotIndex;
 		ShortVector<bool> SnapshotInUse;
+		Clock Timestamp;
 
 	public:
 		//Snapshot manipulation.
@@ -88,8 +90,9 @@ namespace Mimi
 
 	public:
 		//Inter-segment modification.
-		DocumentPositionS DeleteRange(DocumentPositionS begin, DocumentPositionS end);
-		void Insert(DocumentPositionS pos, DynamicBuffer& content, DocumentPositionS);
+		DocumentPositionS DeleteRange(std::uint32_t time, DocumentPositionS begin, DocumentPositionS end);
+		void Insert(std::uint32_t time, DocumentPositionS pos, DynamicBuffer& content, bool hasNewline,
+			DocumentPositionS* begin, DocumentPositionS* end);
 
 	public:
 		static TextDocument* CreateFromTextFile(FileTypeDetector* file);

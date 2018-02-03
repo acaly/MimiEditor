@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="BinaryReader.h" />
     <ClInclude Include="Buffer.h" />
+    <ClInclude Include="Clock.h" />
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Snapshot.h" />
     <ClInclude Include="SnapshotPositionConverter.h" />
@@ -39,6 +40,7 @@
     <ClInclude Include="TextSegmentList.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClockWindows.cpp" />
     <ClCompile Include="CodePage.cpp" />
     <ClCompile Include="CodePageWindows.cpp" />
     <ClCompile Include="FileTypeDetector.cpp" />

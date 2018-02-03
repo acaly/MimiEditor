@@ -1,6 +1,7 @@
 #include "TextSegment.h"
 #include "TextSegmentList.h"
 #include "TextDocument.h"
+#include "CodePage.h"
 
 Mimi::TextSegment::TextSegment(Mimi::DynamicBuffer& buffer, bool continuous,
 	bool unfinished, ModifiedFlag modified)
@@ -109,10 +110,29 @@ void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 {
 	MakeActive();
 
+	if (newLine && pos == 0)
+	{
+		assert(IsContinuous());
+		assert(GetPreviousSegment() && GetPreviousSegment()->IsUnfinished());
+		Continuous.SetContinuous(false);
+		GetPreviousSegment()->Continuous.SetUnfinished(false);
+		return;
+	}
+	if (newLine && pos == GetCurrentLength())
+	{
+		assert(IsUnfinished());
+		assert(GetNextSegment() && GetNextSegment()->IsContinuous());
+		Continuous.SetUnfinished(false);
+		GetNextSegment()->Continuous.SetContinuous(false);
+		return;
+	}
+
 	//Make the new segment
 	TextSegment* newSegment = new TextSegment(!newLine, Continuous.IsUnfinished(), ModifiedFlag::All);
 	Continuous.SetUnfinished(!newLine);
 	newSegment->ActiveData = new ActiveTextSegmentData();
+
+	newSegment->ActiveData->LastModifiedTime = ActiveData->LastModifiedTime;
 
 	//Content
 	ActiveData->ContentBuffer.SplitRight(newSegment->ActiveData->ContentBuffer, pos);
@@ -133,6 +153,20 @@ void Mimi::TextSegment::Merge()
 
 	MakeActive();
 	other->MakeActive();
+
+	Modified.Modify();
+	other->Modified.Modify();
+	ActiveData->LastModifiedTime =
+		ActiveData->LastModifiedTime > other->ActiveData->LastModifiedTime ?
+		ActiveData->LastModifiedTime : other->ActiveData->LastModifiedTime;
+
+	//Check size
+	if (GetCurrentLength() + other->GetCurrentLength() > MaxLength)
+	{
+		Continuous.SetUnfinished(true);
+		other->Continuous.SetContinuous(true);
+		return;
+	}
 
 	//Content
 	ActiveData->ContentBuffer.Insert(ActiveData->ContentBuffer.GetLength(),
@@ -155,7 +189,7 @@ void Mimi::TextSegment::Merge()
 
 void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content)
 {
-	assert(IsActive());
+	MakeActive();
 
 	assert(pos < ActiveData->ContentBuffer.GetLength());
 	assert(sel < ActiveData->ContentBuffer.GetLength() - pos);
@@ -241,6 +275,98 @@ void Mimi::TextSegment::CheckAndMakeInactive(std::uint32_t time)
 		GetDocument()->GetSnapshotCount() == 0)
 	{
 		MakeInactive();
+	}
+}
+
+void Mimi::TextSegment::EnsureInsertionSize(std::size_t pos, std::size_t size,
+	DocumentPositionS* before, DocumentPositionS* after)
+{
+	assert(size < MaxLength);
+	if (GetCurrentLength() + size < MaxLength)
+	{
+		if (before)
+		{
+			*before = { this, pos };
+		}
+		if (after)
+		{
+			*after = { this, pos };
+		}
+	}
+	else if (pos + size < MaxLength)
+	{
+		Split(pos, false);
+		if (before)
+		{
+			*before = { this, pos };
+		}
+		if (after)
+		{
+			*after = { GetNextSegment(), 0 };
+		}
+	}
+	else
+	{
+		Split(pos, false);
+		TextSegment* next2 = GetNextSegment();
+		Split(pos, false);
+		TextSegment* next = GetNextSegment();
+		if (before)
+		{
+			*before = { next, 0 };
+		}
+		if (after)
+		{
+			*after = { next2, 0 };
+		}
+	}
+}
+
+static char32_t GetLastChar(const Mimi::mchar8_t* bufferEnd, Mimi::CodePage cp)
+{
+	std::size_t len = cp.GetNormalWidth();
+	const Mimi::mchar8_t* ch = bufferEnd - len;
+	char32_t ret;
+	if (cp.CharToUTF32(ch, &ret) != len)
+	{
+		return 0;
+	}
+	return ret;
+}
+
+bool Mimi::TextSegment::HasLineBreak()
+{
+	if (GetCurrentLength() == 0)
+	{
+		return false;
+	}
+	const Mimi::mchar8_t* bufferEnd;
+	if (IsActive())
+	{
+		bufferEnd = &ActiveData->ContentBuffer.GetRawData()[ActiveData->ContentBuffer.GetLength()];
+	}
+	else
+	{
+		bufferEnd = &ContentBuffer.GetRawData()[ContentBuffer.GetSize()];
+	}
+	return GetLastChar(bufferEnd, GetDocument()->TextEncoding) == '\n';
+}
+
+void Mimi::TextSegment::CheckLineBreak()
+{
+	bool check = HasLineBreak();
+	if (!IsUnfinished() && check)
+	{
+		Merge();
+	}
+	else if (IsUnfinished() && !check)
+	{
+		Continuous.SetUnfinished(false);
+		TextSegment* other = GetNextSegment();
+		if (other)
+		{
+			other->Continuous.SetContinuous(false);
+		}
 	}
 }
 
