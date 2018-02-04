@@ -3,7 +3,6 @@
 
 namespace Mimi
 {
-
 	namespace LabelType
 	{
 		enum LabelTypeValues : std::uint8_t

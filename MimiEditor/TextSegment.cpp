@@ -438,7 +438,7 @@ std::size_t Mimi::TextSegment::GetHistoryLength(std::size_t snapshot)
 void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 {
 	assert(begin > 0 || dest == GetPreviousSegment()); //split or merge
-	//Move referred labels
+	//Calculate required space for referred labels.
 	std::size_t i = FirstLabel();
 	LabelData* firstRef = nullptr;
 	LabelData* lastRef = nullptr;
@@ -457,7 +457,7 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 		}
 	}
 	TextSegment* next = GetNextSegment();
-	//Move referenced labels
+	//Move referred labels.
 	if (firstRef)
 	{
 		//Copy data.
@@ -469,12 +469,12 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 		do
 		{
 			LabelData* label = ReadLabelData(i);
-			if (label->Position >= begin && label->Type & LabelType::Referred)
+			if (label->Position >= begin && (label->Type & LabelType::Referred))
 			{
 				std::size_t offset = i - firstIndex;
 				std::size_t len = GetLabelLength(label);
 
-				if (begin == 0 && label->Type & LabelType::Continuous)
+				if (begin == 0 && (label->Type & LabelType::Continuous))
 				{
 					//Merge the two labels as one.
 					//We have ensured that dest is the previous segment.
@@ -500,13 +500,14 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 						next->ReadLabelData(linked)[1].Previous = static_cast<std::uint16_t>(alloc + offset);
 					}
 				}
-				EraseLabelSpace(i, len);
 			}
 		} while (NextLabel(&i) && i <= lastIndex);
 		std::ptrdiff_t change = static_cast<std::ptrdiff_t>(alloc) - static_cast<std::ptrdiff_t>(firstIndex);
 		NotifyLabelOwnerChanged(dest, begin, GetCurrentLength(), change);
 	}
-	//Move other labels.
+	//1. Move non-referred labels.
+	//2. Clear referred labels.
+	//3. Split range label (which starts before begin, referred or non-referred).
 	i = FirstLabel();
 	while (NextLabel(&i))
 	{
@@ -515,9 +516,16 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 		{
 			LabelData* label = ReadLabelData(i);
 			std::ptrdiff_t len = GetLabelLength(label);
-			std::ptrdiff_t alloc = dest->AllocateLabelSpace(len);
 
-			if (begin == 0 && label->Type & LabelType::Continuous)
+			if (label->Type & LabelType::Referred)
+			{
+				EraseLabelSpace(i, len);
+				continue;
+			}
+
+			std::size_t alloc = dest->AllocateLabelSpace(len);
+
+			if (begin == 0 && (label->Type & LabelType::Continuous))
 			{
 				//Merge the two labels as one.
 				//We have ensured that dest is the previous segment.
@@ -544,6 +552,35 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 				}
 			}
 			EraseLabelSpace(i, len);
+		}
+		else if ((label->Type & LabelType::Topology) == LabelType::Range)
+		{
+			//Split label
+			std::size_t splitLabelAlloc = dest->AllocateLabelSpace(2);
+			LabelData* splitLabelNext = dest->ReadLabelData(splitLabelAlloc);
+
+			//Create new
+			splitLabelNext->Type = label->Type;
+			splitLabelNext->Type |= LabelType::Continuous;
+			splitLabelNext->Handler = label->Handler;
+			splitLabelNext->Position = 0;
+			splitLabelNext[1].Position = label[1].Position - begin;
+
+			//Update old
+			label[1].Position = begin - 1;
+			label->Type |= LabelType::Unfinished;
+
+			//Link the two
+			std::uint16_t linked = label[1].Next;
+			label[1].Next = splitLabelAlloc;
+			splitLabelNext[1].Previous = i;
+
+			//Update next, if any
+			if (splitLabelNext->Type & LabelType::Unfinished)
+			{
+				assert(next->ReadLabelData(linked)[1].Previous == i);
+				next->ReadLabelData(linked)[1].Previous = splitLabelAlloc;
+			}
 		}
 	}
 }

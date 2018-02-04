@@ -64,11 +64,12 @@ namespace Mimi
 		CodePage TextEncoding;
 
 	private:
-		std::size_t SnapshotCount;
-		std::size_t SnapshotCapacity;
-		std::size_t NextSnapshotIndex;
+		std::size_t SnapshotCount = 0;
+		std::size_t SnapshotCapacity = 0;
+		std::size_t NextSnapshotIndex = 0;
 		ShortVector<bool> SnapshotInUse;
 		Clock Timestamp;
+		std::uint16_t NextLabelHandlerIndex = 0;
 
 	public:
 		//Snapshot manipulation.
@@ -95,8 +96,18 @@ namespace Mimi
 		Event<LabelOwnerChangedEvent, TextSegment*> LabelOwnerChanged;
 		Event<LabelRemovedEvent, TextSegment*> LabelRemoved;
 
-		//TODO global label functions (label type reg, etc.)
-		//TODO label manipulation (add, remove, move, etc.)
+		std::uint16_t GetFreeLabelHandler()
+		{
+			return NextLabelHandlerIndex++;
+		}
+
+		DocumentLabelIndex AddPointLabel(DocumentPositionS pos, int direction, bool longData,
+			bool referred);
+		DocumentLabelIndex AddLineLabel(DocumentPositionS pos, bool longData, bool referred);
+		DocumentLabelIndex AddRangeLabel(DocumentPositionS begin, DocumentPositionS end,
+			bool longData, bool referred);
+		void RemoveLabel(DocumentLabelIndex label);
+		//TODO move?
 
 	public:
 		//Inter-segment modification.
