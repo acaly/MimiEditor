@@ -111,6 +111,7 @@ namespace Mimi
 	{
 		friend class TextSegmentList; //Index, Parent
 		friend struct TextDocumentLabelAccess; //ReadLabelData
+		friend class TextDocumentLabelIterator; //Multiple Label functions
 		friend class LabelOwnerChangedEvent; //ReadLabelData
 
 		static const std::size_t MaxLength = 0xFFFF;

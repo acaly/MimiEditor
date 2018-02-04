@@ -51,8 +51,15 @@ namespace Mimi
 
 		DocumentPositionS GetBeginPosition()
 		{
-			assert((GetLabelData()->Type & LabelType::Continuous) == 0);
-			return { Label.Segment, GetLabelData()->Position };
+			DocumentLabelIndex l = Label;
+			while (GetLabelData(l)->Type & LabelType::Continuous)
+			{
+				DocumentLabelIndex n = { l.Segment->GetPreviousSegment(), GetLabelData(l)[1].Previous};
+				assert(n.Segment);
+				assert(GetLabelData(n)[1].Next == l.Index);
+				l = n;
+			}
+			return { l.Segment, GetLabelData(l)->Position };
 		}
 
 		DocumentPositionS GetEndPosition()

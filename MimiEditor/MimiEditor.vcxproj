@@ -50,6 +50,7 @@
     <ClCompile Include="Snapshot.cpp" />
     <ClCompile Include="SnapshotPositionConverter.cpp" />
     <ClCompile Include="TextDocument.cpp" />
+    <ClCompile Include="TextDocumentLabelIterator.cpp" />
     <ClCompile Include="TextSegment.cpp" />
     <ClCompile Include="TextSegmentList.cpp" />
   </ItemGroup>
