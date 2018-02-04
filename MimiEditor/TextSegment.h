@@ -113,6 +113,7 @@ namespace Mimi
 		friend struct TextDocumentLabelAccess; //ReadLabelData
 		friend class TextDocumentLabelIterator; //Multiple Label functions
 		friend class LabelOwnerChangedEvent; //ReadLabelData
+		friend class TextDocument; //Label manipulation
 
 		static const std::size_t MaxLength = 0xFFFF;
 
@@ -325,9 +326,5 @@ namespace Mimi
 
 		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
 		void NotifyLabelRemoved(std::size_t index);
-
-	public:
-		std::size_t AddLabel(std::uint16_t handler);
-		void RemoveLabel(std::size_t index);
 	};
 }

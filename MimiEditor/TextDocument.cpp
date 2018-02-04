@@ -59,7 +59,146 @@ void Mimi::TextDocument::DisposeSnapshot(Snapshot* s)
 	s->ClearBuffer();
 }
 
-Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time, DocumentPositionS begin, DocumentPositionS end)
+Mimi::DocumentLabelIndex Mimi::TextDocument::AddPointLabel(std::uint16_t handler, 
+	DocumentPositionS pos, int direction, bool longData, bool referred)
+{
+	std::size_t len = longData ? 2 : 1;
+	std::size_t id = pos.Segment->AllocateLabelSpace(len);
+	LabelData* label = pos.Segment->ReadLabelData(id);
+	label->Type = LabelType::Point;
+	if (longData)
+	{
+		label->Type |= LabelType::Long;
+		label[1].Additional = 0;
+	}
+	switch (direction)
+	{
+	case -1:
+		label->Type |= LabelType::Left;
+		break;
+	case 0:
+		label->Type |= LabelType::Center;
+		break;
+	case 1:
+		label->Type |= LabelType::Right;
+		break;
+	default:
+		assert(!"Invalid label direction.");
+		break;
+	}
+	if (referred) label->Type |= LabelType::Referred;
+	label->Handler = handler;
+	label->Data = 0;
+	label->Position = static_cast<std::uint16_t>(pos.Position);
+	return { pos.Segment, id };
+}
+
+Mimi::DocumentLabelIndex Mimi::TextDocument::AddLineLabel(std::uint16_t handler,
+	DocumentPositionS pos, bool longData, bool referred)
+{
+	//Add to the start of the line.
+	TextSegment* s = pos.Segment;
+	while (s->IsContinuous())
+	{
+		s = s->GetPreviousSegment();
+		assert(s);
+	}
+
+	std::size_t len = longData ? 2 : 1;
+	std::size_t id = s->AllocateLabelSpace(len);
+	LabelData* label = s->ReadLabelData(id);
+	label->Type = LabelType::Line;
+	if (longData)
+	{
+		label->Type |= LabelType::Long;
+		label[1].Additional = 0;
+	}
+	if (referred) label->Type |= LabelType::Referred;
+	label->Handler = handler;
+	label->Data = 0;
+	label->Position = 0;
+	return { s, id };
+}
+
+Mimi::DocumentLabelIndex Mimi::TextDocument::AddRangeLabel(std::uint16_t handler,
+	DocumentPositionS begin, DocumentPositionS end, bool longData, bool referred)
+{
+	assert(static_cast<TextDocument*>(begin.Segment->GetDocument()) == this);
+	assert(static_cast<TextDocument*>(end.Segment->GetDocument()) == this);
+	assert(begin.Segment == end.Segment && begin.Position <= end.Position ||
+		TextSegment::ComparePosition(begin.Segment, end.Segment) < 0);
+
+	TextSegment* retSegment = begin.Segment;
+	TextSegment* s = retSegment;
+	std::size_t retId = s->AllocateLabelSpace(longData ? 3 : 2);
+	std::size_t id = retId;
+	LabelData* label = s->ReadLabelData(id);
+	label->Type = LabelType::Range;
+	if (longData)
+	{
+		label->Type |= LabelType::Long;
+		label[2].Additional = 0;
+	}
+	if (referred) label->Type |= LabelType::Referred;
+
+	while (s != end.Segment)
+	{
+		TextSegment* nextSegment = s->GetNextSegment();
+		assert(nextSegment);
+		std::size_t nextId = nextSegment->AllocateLabelSpace(2);
+		LabelData* nextLabel = nextSegment->ReadLabelData(nextId);
+		
+		label->Type |= LabelType::Unfinished;
+		label[1].Next = nextId;
+		label[1].Position = s->GetCurrentLength() - 1;
+
+		nextLabel->Type = LabelType::Range | LabelType::Continuous;
+		nextLabel->Handler = handler;
+		nextLabel->Data = 0;
+		nextLabel->Position = 0;
+		nextLabel[1].Previous = id;
+
+		id = nextId;
+		label = nextLabel;
+		s = nextSegment;
+	}
+	label[1].Position = end.Position;
+	return { retSegment, retId };
+}
+
+void Mimi::TextDocument::RemoveLabel(DocumentLabelIndex label)
+{
+	TextSegment* s = label.Segment;
+	std::size_t index = label.Index;
+	LabelData* d = s->ReadLabelData(index);
+	assert((d->Type & LabelType::Continuous) == 0);
+
+	if (d->Type & LabelType::Referred)
+	{
+		s->NotifyLabelRemoved(label.Index);
+	}
+
+	while (d->Type & LabelType::Unfinished)
+	{
+		assert(d->Type & LabelType::Range);
+		TextSegment* nextSegment = s->GetNextSegment();
+		assert(nextSegment);
+		std::size_t nextIndex = d[1].Next;
+		LabelData* nextLabel = nextSegment->ReadLabelData(nextIndex);
+		assert(nextLabel[1].Previous == index);
+
+		s->EraseLabelSpace(index, TextSegment::GetLabelLength(d));
+
+		s = nextSegment;
+		index = nextIndex;
+		d = nextLabel;
+	}
+
+	s->EraseLabelSpace(index, TextSegment::GetLabelLength(d));
+}
+
+Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
+	DocumentPositionS begin, DocumentPositionS end)
 {
 	assert(static_cast<TextDocument*>(begin.Segment->GetDocument()) == this);
 	assert(static_cast<TextDocument*>(end.Segment->GetDocument()) == this);
@@ -77,7 +216,8 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time, Docu
 	{
 		//Multiple segment
 		begin.Segment->MarkModified(time);
-		begin.Segment->ReplaceText(begin.Position, begin.Segment->GetCurrentLength() - begin.Position, nullptr);
+		begin.Segment->ReplaceText(begin.Position,
+			begin.Segment->GetCurrentLength() - begin.Position, nullptr);
 		TextSegment* s = begin.Segment->GetNextSegment();
 		while (s != end.Segment)
 		{

@@ -101,11 +101,12 @@ namespace Mimi
 			return NextLabelHandlerIndex++;
 		}
 
-		DocumentLabelIndex AddPointLabel(DocumentPositionS pos, int direction, bool longData,
-			bool referred);
-		DocumentLabelIndex AddLineLabel(DocumentPositionS pos, bool longData, bool referred);
-		DocumentLabelIndex AddRangeLabel(DocumentPositionS begin, DocumentPositionS end,
+		DocumentLabelIndex AddPointLabel(std::uint16_t handler, DocumentPositionS pos,
+			int direction, bool longData, bool referred);
+		DocumentLabelIndex AddLineLabel(std::uint16_t handler, DocumentPositionS pos,
 			bool longData, bool referred);
+		DocumentLabelIndex AddRangeLabel(std::uint16_t handler, DocumentPositionS begin,
+			DocumentPositionS end, bool longData, bool referred);
 		void RemoveLabel(DocumentLabelIndex label);
 		//TODO move?
 

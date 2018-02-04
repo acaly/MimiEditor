@@ -122,14 +122,14 @@
     <ClCompile Include="CodePage.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
-    <ClCompile Include="TextDocument.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ClockWindows.cpp">
       <Filter>Source Files\Common</Filter>
     </ClCompile>
+    <ClCompile Include="TextDocument.cpp">
+      <Filter>Source Files\Storage</Filter>
+    </ClCompile>
     <ClCompile Include="TextDocumentLabelIterator.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Storage</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
