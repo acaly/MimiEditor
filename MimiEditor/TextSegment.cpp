@@ -553,7 +553,7 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 			}
 			EraseLabelSpace(i, len);
 		}
-		else if ((label->Type & LabelType::Topology) == LabelType::Range)
+		else if ((label->Type & LabelType::Topology) == LabelType::Range && label[1].Position >= begin)
 		{
 			//Split label
 			std::size_t splitLabelAlloc = dest->AllocateLabelSpace(2);
@@ -564,22 +564,22 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 			splitLabelNext->Type |= LabelType::Continuous;
 			splitLabelNext->Handler = label->Handler;
 			splitLabelNext->Position = 0;
-			splitLabelNext[1].Position = label[1].Position - begin;
+			splitLabelNext[1].Position = static_cast<std::uint16_t>(label[1].Position - begin);
 
 			//Update old
-			label[1].Position = begin - 1;
+			label[1].Position = static_cast<std::uint16_t>(begin - 1);
 			label->Type |= LabelType::Unfinished;
 
 			//Link the two
 			std::uint16_t linked = label[1].Next;
-			label[1].Next = splitLabelAlloc;
-			splitLabelNext[1].Previous = i;
+			label[1].Next = static_cast<std::uint16_t>(splitLabelAlloc);
+			splitLabelNext[1].Previous = static_cast<std::uint16_t>(i);
 
 			//Update next, if any
 			if (splitLabelNext->Type & LabelType::Unfinished)
 			{
 				assert(next->ReadLabelData(linked)[1].Previous == i);
-				next->ReadLabelData(linked)[1].Previous = splitLabelAlloc;
+				next->ReadLabelData(linked)[1].Previous = static_cast<std::uint16_t>(splitLabelAlloc);
 			}
 		}
 	}

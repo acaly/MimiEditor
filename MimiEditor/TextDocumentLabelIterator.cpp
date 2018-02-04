@@ -20,6 +20,19 @@ static bool CheckRange(Mimi::LabelData* l, std::size_t begin, std::size_t end)
 	return l->Position >= begin && l->Position < end;
 }
 
+Mimi::DocumentLabelIndex Mimi::TextDocumentLabelIterator::GetLabelHead(DocumentLabelIndex l)
+{
+	LabelData* labelData;
+	while ((labelData = l.Segment->ReadLabelData(l.Index))->Type & LabelType::Continuous)
+	{
+		DocumentLabelIndex n = { l.Segment->GetPreviousSegment(), labelData[1].Previous };
+		assert(n.Segment);
+		assert(n.Segment->ReadLabelData(n.Index)[1].Next == l.Index);
+		l = n;
+	}
+	return l;
+}
+
 bool Mimi::TextDocumentLabelIterator::MakeCache(TextSegment* s, std::size_t begin, std::size_t end)
 {
 	std::size_t l = s->FirstLabel();
@@ -144,7 +157,7 @@ bool Mimi::TextDocumentLabelIterator::DirectFind(DocumentPositionS pos, int dire
 		}
 		if (found)
 		{
-			*ret = { s, foundIndex };
+			*ret = GetLabelHead({ s, foundIndex });
 			return true;
 		}
 		s = direction > 0 ? s->GetNextSegment() : s->GetPreviousSegment();

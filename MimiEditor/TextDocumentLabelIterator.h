@@ -43,6 +43,9 @@ namespace Mimi
 		const bool RangeBegin, RangeEnd;
 		std::vector<LabelItem> CachedLabel;
 
+	private:
+		static DocumentLabelIndex GetLabelHead(DocumentLabelIndex l);
+
 	public:
 		DocumentPositionS GetCurrentPosition()
 		{
@@ -70,7 +73,7 @@ namespace Mimi
 			}
 			LabelItem ret = CachedLabel.back();
 			CachedLabel.pop_back();
-			CurrentLabel.Index = ret.Index;
+			CurrentLabel = GetLabelHead({ CurrentPosition.Segment, ret.Index });
 			CurrentPosition.Position = ret.Position;
 			return true;
 		}
