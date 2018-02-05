@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="lest.hpp" />
     <ClCompile Include="LineSeparationTest.cpp" />
+    <ClInclude Include="TestCommon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
@@ -141,7 +142,6 @@
     <CopyTestFiles Include="$(InDir)TestFiles\**\*.txt" />
   </ItemGroup>
   <Target Name="AfterBuild">
-    <Copy SourceFiles="@(CopyTestFiles)"
-      DestinationFiles="@(CopyTestFiles->'$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')"/>
+    <Copy SourceFiles="@(CopyTestFiles)" DestinationFiles="@(CopyTestFiles->'$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 </Project>

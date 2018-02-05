@@ -1,13 +1,15 @@
+#include "TestCommon.h"
 
-extern int TestModificationTracer();
-extern int TestModificationTracerSpeed();
-extern int TestEventHandler();
-extern int TestEncodingString();
-extern int TestFile();
-extern int TestLineSeparation();
-extern int TestTextDocument();
+MODULE_LIST(AllTests,
+	TestModificationTracer,
+	TestEncodingString);
 
 int main()
 {
-	return TestTextDocument();
+	int ret = 0;
+	for (auto&& m : AllTests)
+	{
+		ret += m.Run();
+	}
+	return ret;
 }

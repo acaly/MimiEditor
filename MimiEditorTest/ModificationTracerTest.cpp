@@ -1,6 +1,5 @@
-#include "lest.hpp"
+#include "TestCommon.h"
 #include "../MimiEditor/ModificationTracer.h"
-#include <vector>
 
 using namespace Mimi;
 
@@ -100,7 +99,7 @@ private:
 	lest::env& lest_env;
 };
 
-const lest::test specification[] =
+DEFINE_MODULE(TestModificationTracer)
 {
 	CASE("Insert simple")
 	{
@@ -286,8 +285,3 @@ const lest::test specification[] =
 		t2.CheckConversion();
 	},
 };
-
-int TestModificationTracer()
-{
-	return lest::run(specification, { "-p" }, std::cout);
-}
