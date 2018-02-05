@@ -127,6 +127,8 @@ Mimi::DocumentLabelIndex Mimi::TextDocument::AddRangeLabel(std::uint16_t handler
 	assert(static_cast<TextDocument*>(end.Segment->GetDocument()) == this);
 	assert(begin.Segment == end.Segment && begin.Position <= end.Position ||
 		TextSegment::ComparePosition(begin.Segment, end.Segment) < 0);
+	assert(begin.Position < begin.Segment->GetCurrentLength());
+	assert(end.Position < end.Segment->GetCurrentLength());
 
 	TextSegment* retSegment = begin.Segment;
 	TextSegment* s = retSegment;
@@ -149,20 +151,20 @@ Mimi::DocumentLabelIndex Mimi::TextDocument::AddRangeLabel(std::uint16_t handler
 		LabelData* nextLabel = nextSegment->ReadLabelData(nextId);
 		
 		label->Type |= LabelType::Unfinished;
-		label[1].Next = nextId;
-		label[1].Position = s->GetCurrentLength() - 1;
+		label[1].Next = static_cast<std::uint16_t>(nextId);
+		label[1].Position = static_cast<std::uint16_t>(s->GetCurrentLength() - 1);
 
 		nextLabel->Type = LabelType::Range | LabelType::Continuous;
 		nextLabel->Handler = handler;
 		nextLabel->Data = 0;
 		nextLabel->Position = 0;
-		nextLabel[1].Previous = id;
+		nextLabel[1].Previous = static_cast<std::uint16_t>(id);
 
 		id = nextId;
 		label = nextLabel;
 		s = nextSegment;
 	}
-	label[1].Position = end.Position;
+	label[1].Position = static_cast<std::uint16_t>(end.Position);
 	return { retSegment, retId };
 }
 
