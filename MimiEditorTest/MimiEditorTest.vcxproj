@@ -137,4 +137,11 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <CopyTestFiles Include="$(InDir)TestFiles\**\*.txt" />
+  </ItemGroup>
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="@(CopyTestFiles)"
+      DestinationFiles="@(CopyTestFiles->'$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')"/>
+  </Target>
 </Project>
