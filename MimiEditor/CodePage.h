@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <cassert>
 
 namespace Mimi
 {
@@ -29,18 +30,21 @@ namespace Mimi
 				dest[0] = static_cast<char16_t>(unicode);
 				return 1;
 			}
-			else
+			else if (unicode < 0x110000u)
 			{
 				unicode -= 0x10000u;
 				dest[0] = static_cast<char16_t>(0xD800u + (unicode >> 10));
 				dest[1] = static_cast<char16_t>(0xDC00u + (unicode & 0x3FF));
 				return 2;
 			}
+			return 0;
 		}
 
 		static Mimi::BufferIncrement WriteUTF16(std::uint8_t r, char32_t unicode, char16_t* dest)
 		{
-			return { r, ConvertUTF32To16(unicode, dest) };
+			std::uint8_t w = ConvertUTF32To16(unicode, dest);
+			assert(w != 0);
+			return { r, w };
 		}
 
 		static std::uint8_t ConvertUTF16To32(const char16_t* src, char32_t* unicode)
@@ -128,7 +132,10 @@ namespace Mimi
 		virtual std::uint8_t CharFromUTF32(char32_t unicode, mchar8_t* dest) override final
 		{
 			char16_t utf16[2];
-			UnicodeHelper::ConvertUTF32To16(unicode, utf16);
+			if (UnicodeHelper::ConvertUTF32To16(unicode, utf16) == 0)
+			{
+				return 0;
+			}
 			return CharFromUTF16(utf16, dest).Destination;
 		}
 	};

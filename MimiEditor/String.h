@@ -16,18 +16,22 @@ namespace Mimi
 	{
 	public:
 		String()
-			: Data(nullptr), Length(0), Encoding(CodePageManager::UTF8)
+			: String(nullptr, 0, CodePageManager::UTF8)
 		{
 		}
 
 		String(const mchar8_t* data, std::size_t len, CodePage encoding)
 			: Encoding(encoding)
 		{
+			bool appendNull = true;
 			std::size_t nullLen = encoding.GetNormalWidth();
-			char32_t last;
-			//TODO Possible inaccessible memory read.
-			std::uint8_t inc = encoding.CharToUTF32(&data[len - nullLen], &last);
-			bool appendNull = inc == 0 || last != 0;
+			if (len)
+			{
+				char32_t last;
+				//TODO Possible out-of-range memory read.
+				std::uint8_t inc = encoding.CharToUTF32(&data[len - nullLen], &last);
+				appendNull = inc == 0 || last != 0;
+			}
 			Length = len + (appendNull ? nullLen : 0);
 			mchar8_t* newData = new mchar8_t[Length];
 			std::memcpy(newData, data, len);
