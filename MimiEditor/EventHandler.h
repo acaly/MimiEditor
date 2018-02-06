@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
+#include <cassert>
 
 namespace Mimi
 {
@@ -156,6 +157,8 @@ namespace Mimi
 		HandlerId NextId;
 		std::unordered_map<HandlerId, Entry> Handlers;
 		std::queue<HandlerId> UnusedId;
+		std::unordered_set<HandlerId> RemovedHandler;
+		bool IsInIteration = false;
 
 	private:
 		HandlerId GetFreeId()
@@ -201,27 +204,52 @@ namespace Mimi
 
 		void RemoveHandler(HandlerId h)
 		{
-			Handlers.erase(h);
-			UnusedId.push(h);
+			if (IsInIteration)
+			{
+				RemovedHandler.insert(h);
+			}
+			else
+			{
+				Handlers.erase(h);
+				UnusedId.push(h);
+			}
 		}
 
 		void InvokeAll(T* e)
 		{
+			IsInIteration = true;
 			for (auto& entry : Handlers)
 			{
-				entry.second.Handler->Invoke(e);
-			}
-		}
-
-		void InvokeWithFilter(T* e, F f)
-		{
-			for (auto& entry : Handlers)
-			{
-				if (entry.second.Filter == f)
+				if (RemovedHandler.find(entry.first) == RemovedHandler.end())
 				{
 					entry.second.Handler->Invoke(e);
 				}
 			}
+			IsInIteration = false;
+			for (auto& h : RemovedHandler)
+			{
+				RemoveHandler(h);
+			}
+			RemovedHandler.clear();
+		}
+
+		void InvokeWithFilter(T* e, F f)
+		{
+			IsInIteration = true;
+			for (auto& entry : Handlers)
+			{
+				if (entry.second.Filter == f &&
+					RemovedHandler.find(entry.first) == RemovedHandler.end())
+				{
+					entry.second.Handler->Invoke(e);
+				}
+			}
+			IsInIteration = false;
+			for (auto& h : RemovedHandler)
+			{
+				RemoveHandler(h);
+			}
+			RemovedHandler.clear();
 		}
 	};
 

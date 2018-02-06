@@ -2,7 +2,7 @@
 
 MODULE_LIST(AllTests,
 	TestModificationTracer,
-	TestEncodingString);
+	TestEventHandler);
 
 int main()
 {

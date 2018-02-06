@@ -3,101 +3,104 @@
 
 using namespace Mimi;
 
-class ModificationTester
+namespace
 {
-public:
-	ModificationTester(lest::env& lest_env, int size)
-		: lest_env(lest_env)
+	class ModificationTester
 	{
-		Tracer.Resize(1);
-		Tracer.NewSnapshot(1, size);
-
-		InitialSize = size;
-		for (int i = 0; i < size; ++i)
+	public:
+		ModificationTester(lest::env& lest_env, int size)
+			: lest_env(lest_env)
 		{
-			Items.push_back(i);
-		}
-	}
+			Tracer.Resize(1);
+			Tracer.NewSnapshot(1, size);
 
-	void Insert(int pos, int len)
-	{
-		Tracer.Insert(pos, len);
-		Items.insert(Items.begin() + pos, len, -1);
-		CheckSequence();
-	}
-
-	void Delete(int pos, int len)
-	{
-		Tracer.Delete(pos, len);
-		Items.erase(Items.begin() + pos, Items.begin() + pos + len);
-		CheckSequence();
-	}
-
-	void CheckSequence()
-	{
-		EXPECT(Tracer.CheckSequence(1, InitialSize));
-	}
-
-	void CheckConversion()
-	{
-		int last = -1;
-		std::size_t vectorPosition = 0;
-		std::size_t lastVectorPosition = ModificationTracer::PositionDeleted;
-		while (vectorPosition < Items.size())
-		{
-			if (Items[vectorPosition] != -1)
+			InitialSize = size;
+			for (int i = 0; i < size; ++i)
 			{
-				int current = Items[vectorPosition];
+				Items.push_back(i);
+			}
+		}
 
-				for (int i = last + 1; i < current; ++i)
+		void Insert(int pos, int len)
+		{
+			Tracer.Insert(pos, len);
+			Items.insert(Items.begin() + pos, len, -1);
+			CheckSequence();
+		}
+
+		void Delete(int pos, int len)
+		{
+			Tracer.Delete(pos, len);
+			Items.erase(Items.begin() + pos, Items.begin() + pos + len);
+			CheckSequence();
+		}
+
+		void CheckSequence()
+		{
+			EXPECT(Tracer.CheckSequence(1, InitialSize));
+		}
+
+		void CheckConversion()
+		{
+			int last = -1;
+			std::size_t vectorPosition = 0;
+			std::size_t lastVectorPosition = ModificationTracer::PositionDeleted;
+			while (vectorPosition < Items.size())
+			{
+				if (Items[vectorPosition] != -1)
 				{
-					EXPECT(Tracer.ConvertFromSnapshot(0, i, 0) == ModificationTracer::PositionDeleted);
-					EXPECT(Tracer.ConvertFromSnapshot(0, i, -1) == vectorPosition);
-					EXPECT(Tracer.ConvertFromSnapshot(0, i, 1) == lastVectorPosition);
+					int current = Items[vectorPosition];
+
+					for (int i = last + 1; i < current; ++i)
+					{
+						EXPECT(Tracer.ConvertFromSnapshot(0, i, 0) == ModificationTracer::PositionDeleted);
+						EXPECT(Tracer.ConvertFromSnapshot(0, i, -1) == vectorPosition);
+						EXPECT(Tracer.ConvertFromSnapshot(0, i, 1) == lastVectorPosition);
+					}
+
+					EXPECT(Tracer.ConvertFromSnapshot(0, current, 0) == vectorPosition);
+					EXPECT(Tracer.ConvertFromSnapshot(0, current, -1) == vectorPosition);
+					EXPECT(Tracer.ConvertFromSnapshot(0, current, 1) == vectorPosition);
+
+					lastVectorPosition = vectorPosition;
+					last = current;
 				}
-
-				EXPECT(Tracer.ConvertFromSnapshot(0, current, 0) == vectorPosition);
-				EXPECT(Tracer.ConvertFromSnapshot(0, current, -1) == vectorPosition);
-				EXPECT(Tracer.ConvertFromSnapshot(0, current, 1) == vectorPosition);
-
-				lastVectorPosition = vectorPosition;
-				last = current;
+				vectorPosition += 1;
 			}
-			vectorPosition += 1;
 		}
-	}
 
-	void Split(int pos, ModificationTester& other)
-	{
-		Tracer.SplitInto(other.Tracer, 1, pos);
-		other.Items.clear();
-		int offset = -1;
-		for (int i = pos; i < (int)Items.size(); ++i)
+		void Split(int pos, ModificationTester& other)
 		{
-			if (offset == -1 && Items[i] != -1)
+			Tracer.SplitInto(other.Tracer, 1, pos);
+			other.Items.clear();
+			int offset = -1;
+			for (int i = pos; i < (int)Items.size(); ++i)
 			{
-				offset = Items[i];
+				if (offset == -1 && Items[i] != -1)
+				{
+					offset = Items[i];
+				}
+				other.Items.push_back(Items[i] - (offset == -1 || Items[i] == -1 ? 0 : offset));
 			}
-			other.Items.push_back(Items[i] - (offset == -1 || Items[i] == -1 ? 0 : offset));
+			Items.erase(Items.begin() + pos, Items.end());
+			if (offset == -1)
+			{
+				other.InitialSize = 0;
+			}
+			else
+			{
+				other.InitialSize = InitialSize - offset;
+				InitialSize = offset;
+			}
 		}
-		Items.erase(Items.begin() + pos, Items.end());
-		if (offset == -1)
-		{
-			other.InitialSize = 0;
-		}
-		else
-		{
-			other.InitialSize = InitialSize - offset;
-			InitialSize = offset;
-		}
-	}
 
-private:
-	int InitialSize;
-	ModificationTracer Tracer;
-	std::vector<int> Items;
-	lest::env& lest_env;
-};
+	private:
+		int InitialSize;
+		ModificationTracer Tracer;
+		std::vector<int> Items;
+		lest::env& lest_env;
+	};
+}
 
 DEFINE_MODULE(TestModificationTracer)
 {
