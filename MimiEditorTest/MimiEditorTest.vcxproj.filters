@@ -36,9 +36,6 @@
     <ClCompile Include="EncodingStringTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FileTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="LineSeparationTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

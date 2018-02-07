@@ -136,7 +136,6 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
     </ClCompile>
     <ClCompile Include="ModificationTracerTest.cpp" />
-    <ClCompile Include="FileTest.cpp" />
     <ClCompile Include="TextDocumentTest.cpp" />
   </ItemGroup>
   <ItemGroup>
