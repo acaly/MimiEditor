@@ -1,2 +1,0 @@
-﻿This is a UTF-8 file with BOM.
-这是一个UTF-8文件（带字节序标记）。

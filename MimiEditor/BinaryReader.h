@@ -197,7 +197,7 @@ namespace Mimi
 
 		void SkipPeeked(std::size_t n)
 		{
-			assert(n < BufferCount());
+			assert(n <= BufferCount());
 			BufferPosition += n;
 			InputCount -= n;
 		}

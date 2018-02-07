@@ -3,7 +3,8 @@
 MODULE_LIST(AllTests,
 	TestModificationTracer,
 	TestEventHandler,
-	TestEncodingString);
+	TestEncodingString,
+	TestEncodingDetection);
 
 int main()
 {

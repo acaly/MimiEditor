@@ -30,6 +30,8 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -37,12 +39,16 @@
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -50,6 +56,8 @@
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -120,6 +128,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EncodingDetectionTest.cpp" />
     <ClCompile Include="EncodingStringTest.cpp" />
     <ClCompile Include="EventHandlerTest.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -140,6 +149,31 @@
   </ImportGroup>
   <ItemGroup>
     <CopyTestFiles Include="$(InDir)TestFiles\**\*.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="TestFiles\Encoding\ASCII-1.txt" />
+    <Text Include="TestFiles\Encoding\GBK-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BE-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BE-2.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BE-3.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-2.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-3.txt" />
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-4.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LE-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LE-2.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LE-3.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-2.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-3.txt" />
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-4.txt" />
+    <Text Include="TestFiles\Encoding\UTF8-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF8-2.txt" />
+    <Text Include="TestFiles\Encoding\UTF8-3.txt" />
+    <Text Include="TestFiles\Encoding\UTF8BOM-1.txt" />
+    <Text Include="TestFiles\Encoding\UTF8BOM-2.txt" />
+    <Text Include="TestFiles\Encoding\UTF8BOM-3.txt" />
+    <Text Include="TestFiles\Encoding\UTF8BOM-4.txt" />
   </ItemGroup>
   <Target Name="AfterBuild">
     <Copy SourceFiles="@(CopyTestFiles)" DestinationFiles="@(CopyTestFiles->'$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')" />

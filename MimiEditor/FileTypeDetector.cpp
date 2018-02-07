@@ -25,6 +25,25 @@ namespace
 			Encoding = cp;
 			AllowBOM = allowBOM;
 			Type = type;
+			TotalCount = PositiveCount = NegativeCount = 0;
+		}
+
+	private:
+		void CountUTF16BOChar(char32_t ch)
+		{
+			if (Type != BasicType::UTF16BE && Type != BasicType::UTF16LE)
+			{
+				return;
+			}
+			TotalCount += 1;
+			if (ch <= 0x7F)
+			{
+				PositiveCount += 1;
+			}
+			if (ch < 0x10000 && (ch & 0xFF) == 0)
+			{
+				NegativeCount += 1;
+			}
 		}
 
 	public:
@@ -58,6 +77,7 @@ namespace
 				//Invalid unicode. Stop here.
 				return false;
 			}
+			CountUTF16BOChar(unicode);
 			return true;
 		}
 
@@ -89,6 +109,7 @@ namespace
 					//Invalid unicode. Stop here.
 					return false;
 				}
+				CountUTF16BOChar(unicode);
 			}
 			return true;
 		}
@@ -108,6 +129,29 @@ namespace
 			return Encoding;
 		}
 
+		float GetBOFactor()
+		{
+			if (TotalCount == 0)
+			{
+				return 1.0f; //Other CodePages return 1.0f.
+			}
+			const float MaxVal = 100;
+			if (NegativeCount == 0)
+			{
+				if (PositiveCount > TotalCount / 10 || PositiveCount > 10)
+				{
+					return MaxVal; //No negative, positive is not minor, return Max.
+				}
+				else
+				{
+					return 1.0f; //No negative, but positive is minor. return 1.0f.
+				}
+			}
+			float ret = static_cast<float>(PositiveCount) / NegativeCount;
+			if (ret > MaxVal) ret = MaxVal; //Otherwise return ratio.
+			return ret;
+		}
+
 	private:
 		CodePage Encoding;
 		std::size_t BufferLength = 0;
@@ -115,6 +159,8 @@ namespace
 		bool BOM = false;
 		bool AllowBOM;
 		BasicType Type;
+		std::size_t TotalCount;
+		std::size_t PositiveCount, NegativeCount;
 	};
 }
 
@@ -191,11 +237,11 @@ void Mimi::FileTypeDetector::Detect()
 {
 	std::vector<CodePageCheck> check;
 	check.emplace_back(CodePageManager::ASCII, false, BasicType::ASCII);
+	check.emplace_back(CodePageManager::UTF8, true, BasicType::UTF8);
 	for (auto cp : Options.PrimaryCodePages)
 	{
 		check.emplace_back(cp, false, BasicType::CodePage);
 	}
-	check.emplace_back(CodePageManager::UTF8, true, BasicType::UTF8);
 	check.emplace_back(CodePageManager::UTF16LE, true, BasicType::UTF16LE);
 	check.emplace_back(CodePageManager::UTF16BE, true, BasicType::UTF16BE);
 	for (auto cp : Options.AdditionalCodePages)
@@ -272,8 +318,17 @@ void Mimi::FileTypeDetector::Detect()
 		}
 		if (num != 1)
 		{
-			//If not, use the first.
-			index = 0;
+			//If not, compare BOFactor
+			float val = 0;
+			for (std::size_t i = 0; i < check.size(); ++i)
+			{
+				float newVal = check[i].GetBOFactor();
+				if (newVal > val)
+				{
+					val = newVal;
+					index = i;
+				}
+			}
 		}
 
 		BasicType b = check[index].GetType();

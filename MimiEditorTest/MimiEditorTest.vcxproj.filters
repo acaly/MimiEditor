@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Test Files">
+      <UniqueIdentifier>{2a9f3543-c744-4f09-a4da-ab9beed0d38c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test Files\Encoding">
+      <UniqueIdentifier>{23ffbe5a-0f5b-4cd7-8ce4-f5292624d56e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracerTest.cpp">
@@ -39,6 +45,9 @@
     <ClCompile Include="TextDocumentTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EncodingDetectionTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lest.hpp">
@@ -47,5 +56,76 @@
     <ClInclude Include="TestCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="TestFiles\Encoding\ASCII-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\GBK-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8-2.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8-3.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8BOM-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8BOM-2.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8BOM-3.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF8BOM-4.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BE-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BE-2.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BE-3.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-2.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-3.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16BEBOM-4.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LE-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LE-2.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LE-3.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-1.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-2.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-3.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Encoding\UTF16LEBOM-4.txt">
+      <Filter>Test Files\Encoding</Filter>
+    </Text>
   </ItemGroup>
 </Project>

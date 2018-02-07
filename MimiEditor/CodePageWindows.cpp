@@ -121,9 +121,22 @@ namespace
 	}
 }
 
+static Mimi::CodePage FindCodePage(UINT cp)
+{
+	//TODO use better cache method
+	for (int i = 0; i < sizeof(AllCodePageId) / sizeof(AllCodePageId[0]); ++i)
+	{
+		if (AllCodePageId[i] == cp)
+		{
+			return Mimi::CodePageManager::ListCodePages()[i];
+		}
+	}
+	return Mimi::CodePage(WindowsCodePageImpl::Create(cp));
+}
+
 Mimi::CodePage Mimi::CodePageManager::GetSystemCodePage()
 {
-	static CodePage systemCodePage = { WindowsCodePageImpl::Create(::GetACP()) };
+	static CodePage systemCodePage = FindCodePage(::GetACP());
 	return systemCodePage;
 }
 
@@ -135,5 +148,6 @@ std::vector<Mimi::CodePage> Mimi::CodePageManager::ListCodePages()
 
 Mimi::CodePage GetWindowsCodePage936()
 {
-	return { WindowsCodePageImpl::Create(936) };
+	static CodePage ret = FindCodePage(936);
+	return ret;
 }
