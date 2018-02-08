@@ -1,6 +1,13 @@
 #pragma once
 
 #include "lest.hpp"
+#include <cassert>
+#include <cstring>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <functional>
 
 struct TestModule
 {
@@ -62,3 +69,5 @@ private:
 #define MODULE_LIST(name, ...) \
 	extern GetTestModule __VA_ARGS__; \
 	std::vector<GetTestModuleWrapper> name = { __VA_ARGS__ };
+
+extern const char* ExecutableDirectory;

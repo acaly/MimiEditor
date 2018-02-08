@@ -19,6 +19,9 @@
     <Filter Include="Test Files\Encoding">
       <UniqueIdentifier>{23ffbe5a-0f5b-4cd7-8ce4-f5292624d56e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Test Files\Line">
+      <UniqueIdentifier>{e7c40373-1934-4a84-91b2-d783dc403e77}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracerTest.cpp">
@@ -123,6 +126,12 @@
     </Text>
     <Text Include="TestFiles\Encoding\UTF16LEBOM-4.txt">
       <Filter>Test Files\Encoding</Filter>
+    </Text>
+    <Text Include="TestFiles\Line\SingleByte.txt">
+      <Filter>Test Files\Line</Filter>
+    </Text>
+    <Text Include="TestFiles\Line\MultiByte.txt">
+      <Filter>Test Files\Line</Filter>
     </Text>
   </ItemGroup>
 </Project>

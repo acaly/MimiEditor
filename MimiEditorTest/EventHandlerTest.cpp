@@ -1,9 +1,5 @@
 #include "TestCommon.h"
 #include "../MimiEditor/EventHandler.h"
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <functional>
 
 using namespace Mimi;
 using namespace std;

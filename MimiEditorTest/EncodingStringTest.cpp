@@ -1,5 +1,6 @@
 #include "TestCommon.h"
 #include "../MimiEditor/String.h"
+
 using namespace Mimi;
 
 extern Mimi::CodePage GetWindowsCodePage936();

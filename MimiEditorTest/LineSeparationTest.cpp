@@ -1,31 +1,79 @@
+#include "TestCommon.h"
 #include "../MimiEditor/FileTypeDetector.h"
-#include <string>
-#include <iostream>
 
 using namespace Mimi;
 using namespace std;
 
-int TestLineSeparation()
+namespace
 {
-	string path;
-	getline(cin, path);
-	String pathStr = String::FromUtf8Ptr(path.c_str());
-	unique_ptr<IFile> file = unique_ptr<IFile>(IFile::CreateFromPath(std::move(pathStr)));
-	unique_ptr<IFileReader> r = unique_ptr<IFileReader>(file->Read());
-	
-	FileTypeDetectionOptions option;
-	option.InvalidCharAction = InvalidCharAction::ReplaceQuestionMark;
-	option.MaxRead = 1000;
-	option.MinRead = 100;
-	
-	FileTypeDetector detector(std::move(r), option);
-
-	while (detector.ReadNextLine())
+	class LineSeparationTester
 	{
-		String str(
-			reinterpret_cast<const mchar8_t*>(detector.CurrentLineData.GetRawData()),
-			detector.CurrentLineData.GetLength(),
-			detector.GetCodePage());
-	}
-	return 0;
+	public:
+		LineSeparationTester(lest::env& lest_env)
+			: lest_env(lest_env)
+		{
+		}
+
+	private:
+		lest::env& lest_env;
+
+	private:
+		static String GetFileName(const char* path)
+		{
+			//TODO use internal format function
+			stringstream ss;
+			ss << ExecutableDirectory << path;
+			return String::FromUtf8Ptr(ss.str().c_str());
+		}
+
+	public:
+		void TestFile(const char* fn)
+		{
+			auto file = IFile::CreateFromPath(GetFileName(fn));
+			auto r = unique_ptr<IFileReader>(file->Read());
+
+			FileTypeDetectionOptions o;
+			o.InvalidCharAction = InvalidCharAction::Cancel;
+			o.MinRead = 100;
+			o.MaxRead = 1000;
+			FileTypeDetector d(std::move(r), o);
+			EXPECT(d.GetCodePage() == CodePageManager::UTF8);
+
+			bool lastIsEmpty = false;
+			bool lastHasNewline = true;
+			while (d.ReadNextLine())
+			{
+				auto len = d.CurrentLineData.GetLength();
+				auto ptr = d.CurrentLineData.GetRawData();
+
+				EXPECT(!lastIsEmpty); //Only last line can be empty (without newline).
+				if (len == 0)
+				{
+					lastIsEmpty = true;
+				}
+
+				lastHasNewline = (ptr[len - 1] == '\n');
+
+				String str(ptr, len, d.GetCodePage());
+				String strConv = str.ToUtf16String().ToCodePage(d.GetCodePage());
+				EXPECT(memcmp(str.Data, strConv.Data, str.Length) == 0); //String is valid.
+			}
+			EXPECT(!d.IsError()); //Read to EOF.
+			EXPECT(!lastHasNewline); //Last line should not have newline.
+		}
+	};
 }
+
+DEFINE_MODULE(TestLineSeparation)
+{
+	CASE("Single-byte char")
+	{
+		LineSeparationTester t(lest_env);
+		t.TestFile("Line/SingleByte.txt");
+	},
+	CASE("Multi-byte char")
+	{
+		LineSeparationTester t(lest_env);
+		t.TestFile("Line/MultiByte.txt");
+	},
+};

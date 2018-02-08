@@ -1,7 +1,5 @@
 #include "TestCommon.h"
 #include "../MimiEditor/FileTypeDetector.h"
-#include <string>
-#include <sstream>
 
 using namespace Mimi;
 using namespace std;
@@ -26,7 +24,7 @@ namespace
 		{
 			//TODO use internal format function
 			stringstream ss;
-			ss << pathPrefix << "-" << (i + 1) << ".txt";
+			ss << ExecutableDirectory << pathPrefix << "-" << (i + 1) << ".txt";
 			return String::FromUtf8Ptr(ss.str().c_str());
 		}
 
