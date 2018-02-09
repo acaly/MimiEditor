@@ -20,9 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BinaryReader.h" />
+    <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="BitmapData.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="CodePage.h" />
+    <ClInclude Include="Font.h" />
+    <ClInclude Include="GraphicsDevice.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="Snapshot.h" />
     <ClInclude Include="SnapshotPositionConverter.h" />
     <ClInclude Include="StringBuilder.h" />
