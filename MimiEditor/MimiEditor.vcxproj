@@ -25,6 +25,7 @@
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Snapshot.h" />
     <ClInclude Include="SnapshotPositionConverter.h" />
+    <ClInclude Include="StringBuilder.h" />
     <ClInclude Include="TextDocument.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FileTypeDetector.h" />

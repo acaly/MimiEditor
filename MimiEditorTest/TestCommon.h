@@ -1,10 +1,9 @@
 #pragma once
 
 #include "lest.hpp"
+#include "../MimiEditor/StringBuilder.h"
 #include <cassert>
 #include <cstring>
-#include <string>
-#include <sstream>
 #include <vector>
 #include <algorithm>
 #include <functional>

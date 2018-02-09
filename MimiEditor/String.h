@@ -93,7 +93,7 @@ namespace Mimi
 		CodePage Encoding;
 
 	public:
-		String ToCodePage(CodePage cp)
+		String ToCodePage(CodePage cp) const
 		{
 			if (Encoding != CodePageManager::UTF16LE)
 			{
@@ -112,7 +112,7 @@ namespace Mimi
 			return String(buffer.data(), buffer.size(), cp);
 		}
 
-		String ToUtf16String()
+		String ToUtf16String() const
 		{
 			std::vector<char16_t> buffer;
 			char16_t conv[2];
@@ -128,7 +128,7 @@ namespace Mimi
 				buffer.size() * 2, CodePageManager::UTF16LE);
 		}
 
-		String ToUtf8String()
+		String ToUtf8String() const
 		{
 			return ToCodePage(CodePageManager::UTF8);
 		}

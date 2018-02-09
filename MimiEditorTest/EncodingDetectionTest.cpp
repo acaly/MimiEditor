@@ -22,10 +22,13 @@ namespace
 
 		static String GetFileName(const char* pathPrefix, int i)
 		{
-			//TODO use internal format function
-			stringstream ss;
-			ss << ExecutableDirectory << pathPrefix << "-" << (i + 1) << ".txt";
-			return String::FromUtf8Ptr(ss.str().c_str());
+			Mimi::StringBuilder sb(CodePageManager::UTF8);
+			sb.AppendUtf8(ExecutableDirectory);
+			sb.AppendUtf8(pathPrefix);
+			sb.AppendUtf8("-");
+			sb.AppendValue(i + 1);
+			sb.AppendUtf8(".txt");
+			return sb.ToString();
 		}
 
 		void TestFile(const char* pathPrefix, int i)

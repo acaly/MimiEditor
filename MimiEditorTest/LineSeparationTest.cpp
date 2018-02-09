@@ -20,10 +20,10 @@ namespace
 	private:
 		static String GetFileName(const char* path)
 		{
-			//TODO use internal format function
-			stringstream ss;
-			ss << ExecutableDirectory << path;
-			return String::FromUtf8Ptr(ss.str().c_str());
+			Mimi::StringBuilder sb(CodePageManager::UTF8);
+			sb.AppendUtf8(ExecutableDirectory);
+			sb.AppendUtf8(path);
+			return sb.ToString();
 		}
 
 	public:

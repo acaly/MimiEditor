@@ -71,13 +71,13 @@ namespace Mimi
 		}
 
 	public:
-		std::uint16_t GetSize()
+		std::uint16_t GetSize() const
 		{
 			assert(Data);
 			return Data->Size;
 		}
 
-		const std::uint8_t* GetRawData()
+		const std::uint8_t* GetRawData() const
 		{
 			assert(Data);
 			return Data->RawData;
@@ -149,13 +149,13 @@ namespace Mimi
 		bool IsExternalBuffer;
 
 	public:
-		std::size_t GetLength()
+		std::size_t GetLength() const
 		{
 			return Length;
 		}
 
 		//Readonly
-		const std::uint8_t* GetRawData()
+		const std::uint8_t* GetRawData() const
 		{
 			if (IsExternalBuffer)
 			{
@@ -167,7 +167,13 @@ namespace Mimi
 			}
 		}
 
-		std::size_t CopyTo(std::uint8_t* buffer, std::size_t pos, std::size_t len)
+		std::uint8_t* GetPointer()
+		{
+			assert(!IsExternalBuffer);
+			return Pointer;
+		}
+
+		std::size_t CopyTo(std::uint8_t* buffer, std::size_t pos, std::size_t len) const
 		{
 			std::size_t copyLen = Length - pos;
 			if (len < copyLen)
@@ -185,7 +191,7 @@ namespace Mimi
 			return copyLen;
 		}
 
-		StaticBuffer MakeStaticBuffer()
+		StaticBuffer MakeStaticBuffer() const
 		{
 			StaticBuffer::StaticBufferData* ptr = StaticBuffer::AllocateData(Length);
 			ptr->RefCount = 1;
