@@ -27,6 +27,7 @@
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="GraphicsDevice.h" />
+    <ClInclude Include="PixelFormat.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Snapshot.h" />
     <ClInclude Include="SnapshotPositionConverter.h" />

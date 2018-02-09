@@ -233,5 +233,10 @@ namespace Mimi
 			}
 			return true;
 		}
+
+		std::size_t GetStreamPosition()
+		{
+			return Input->GetSize() - InputCount;
+		}
 	};
 }

@@ -2,11 +2,13 @@
 
 namespace Mimi
 {
+	class BitmapData;
+	class Renderer;
+
 	class Bitmap
 	{
 	public:
-		//Clone
-		//CopyData
-		//Render
+		virtual BitmapData* GetData() = 0;
+		virtual Renderer* CreateRenderer() = 0;
 	};
 }
