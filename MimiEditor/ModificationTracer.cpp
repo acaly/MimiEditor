@@ -230,7 +230,7 @@ void Mimi::ModificationTracer::Delete(std::size_t pos, std::size_t len)
 	}
 
 	//Reach the last entry
-	assert(m->Position + delta > cpos + clen && "Modification tracer: delete after the end");
+	assert(m->Position + delta >= cpos + clen && "Modification tracer: delete after the end");
 	//Set coverStart if not yet
 	if (coverStart == nullptr)
 	{
@@ -390,23 +390,107 @@ void Mimi::ModificationTracer::MergeWith(ModificationTracer& other, std::size_t 
 	Snapshot* sb = other.SnapshotHead;
 	for (std::size_t i = 0; i < snapshots; ++i)
 	{
-		//Find the offset for b
-		Modification* ma = sa->Modifications.GetPointer();
-		while (ma->Change) ma += 1;
+		Modification* maLast = &sa->Modifications.GetPointer()[sa->Modifications.GetCount() - 1];
+
+		//Find the offset for b.
+		Modification* ma = maLast;
 		std::uint16_t offset = ma->Position;
 
-		//Update the position for b
-		Modification* mb = sb->Modifications.GetPointer();
-		while (mb->Change)
+		//Variables needed to add merged entries.
+		std::int16_t mergeDelete = 0;
+		std::int16_t mergeInsert = 0;
+		std::uint16_t mergePosition = offset;
+
+		//Check last item.
+		if (ma - 1 >= sa->Modifications.GetPointer())
 		{
-			mb->Position += offset;
+			std::int32_t length = offset;
+			Modification* mfind = ma - 1;
+			//Check deletion first.
+			if (mfind->Change < 0)
+			{
+				std::int32_t endPos = mfind->Position;
+				endPos -= mfind->Change;
+				if (endPos == length)
+				{
+					mergeDelete = mfind->Change; //Remember change.
+					length = mfind->Position; //Check insertion at new position.
+					if (mfind - 1 >= sa->Modifications.GetPointer())
+					{
+						//Possible insertion is before this entry.
+						//Note that if it's the first entry, later the check for
+						//insertion must fail (Change > 0).
+						mfind -= 1;
+					}
+					ma -= 1; //Remove this entry.
+				}
+				else
+				{
+					//We don't need to check insertion if ever goes here.
+					//But the presence of deletion ensures previous insertion (if
+					//any) does not meet the condition and will not be processed.
+				}
+			}
+			//Then check insertion.
+			if (mfind->Change > 0)
+			{
+				std::int32_t endPos = mfind->Position;
+				if (endPos == length)
+				{
+					mergeInsert = mfind->Change;
+					ma -= 1;
+				}
+			}
+			mergePosition = length;
 		}
-		mb->Position += offset;
 
-		//Copy data from b
-		sa->Modifications.ApendRange(sb->Modifications.GetPointer(), sb->Modifications.GetCount());
+		//Remove the checked entries (including the count entry).
+		sa->Modifications.RemoveRange(ma - sa->Modifications.GetPointer(), maLast - ma + 1);
 
-		//Merge next snapshot
+		Modification* mb = sb->Modifications.GetPointer();
+		int ifind = 0;
+		//Check the start of b.
+		if (sb->Modifications.GetCount() > 1)
+		{
+			//Check insertion first.
+			if (mb->Change > 0 && mb->Position == 0)
+			{
+				mergeInsert += mb->Change;
+				//We don't need to worry about bound check here, because
+				//the last entry must have Change == 0.
+				mb += 1; //Check at next entry, and also don't copy this.
+			}
+			if (mb->Change < 0 && mb->Position == 0)
+			{
+				mergeDelete += mb->Change;
+				mb += 1; //Don't copy this entry.
+			}
+		}
+
+		//Add merged entries if needed.
+		if (mergeInsert != 0)
+		{
+			sa->Modifications.Append({ mergePosition, mergeInsert });
+		}
+		if (mergeDelete != 0)
+		{
+			sa->Modifications.Append({ mergePosition, mergeDelete });
+		}
+
+		//Update the position for b.
+		Modification* update = mb;
+		while (update->Change)
+		{
+			update->Position += offset;
+			update += 1;
+		}
+		update->Position += offset;
+		//update is the last entry to copy.
+
+		//Copy data from b.
+		sa->Modifications.ApendRange(mb, update - mb + 1);
+
+		//Merge next snapshot.
 		sa = sa->Next;
 		sb = sb->Next;
 	}

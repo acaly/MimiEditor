@@ -92,6 +92,23 @@ namespace
 				other.InitialSize = InitialSize - offset;
 				InitialSize = offset;
 			}
+			CheckSequence();
+			other.CheckSequence();
+		}
+
+		void Merge(ModificationTester& other)
+		{
+			Tracer.MergeWith(other.Tracer, 1);
+			for (int i = 0; i < (int)other.Items.size(); ++i)
+			{
+				if (other.Items[i] >= 0)
+				{
+					other.Items[i] += InitialSize;
+				}
+			}
+			Items.insert(Items.end(), other.Items.begin(), other.Items.end());
+			InitialSize += other.InitialSize;
+			CheckSequence();
 		}
 
 	private:
@@ -286,5 +303,94 @@ DEFINE_MODULE(TestModificationTracer)
 		t1.Split(4, t2);
 		t1.CheckConversion();
 		t2.CheckConversion();
+	},
+	CASE("Merge simple")
+	{
+		ModificationTester t1(lest_env, 4);
+		ModificationTester t2(lest_env, 4);
+		t1.Insert(2, 1);
+		t2.Delete(1, 2);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge I+x")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t1.Insert(1, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge D+x")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t1.Delete(1, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge ID+x")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t1.Delete(1, 1);
+		t1.Insert(1, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge x+I")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t2.Insert(0, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge x+D")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t2.Delete(0, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge x+ID")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t2.Delete(0, 1);
+		t2.Insert(0, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge D+I")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t1.Delete(1, 1);
+		t2.Insert(0, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge D+ID")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t1.Delete(1, 1);
+		t2.Delete(0, 1);
+		t2.Insert(0, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
+	},
+	CASE("Merge ID+ID")
+	{
+		ModificationTester t1(lest_env, 2);
+		ModificationTester t2(lest_env, 2);
+		t1.Delete(1, 1);
+		t1.Insert(1, 1);
+		t2.Delete(0, 1);
+		t2.Insert(0, 1);
+		t1.Merge(t2);
+		t1.CheckConversion();
 	},
 };
