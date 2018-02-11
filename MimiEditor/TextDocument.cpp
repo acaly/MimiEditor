@@ -23,9 +23,13 @@ Mimi::Snapshot* Mimi::TextDocument::CreateSnapshot()
 
 	TextSegment* segment = this->SegmentTree.GetFirstSegment();
 	assert(segment);
+
+	s->DataLength = 0;
 	do
 	{
-		s->AppendBuffer(segment->MakeSnapshot(resize));
+		StaticBuffer buffer = segment->MakeSnapshot(resize);
+		s->AppendBuffer(buffer);
+		s->DataLength += buffer.GetSize();
 		segment = segment->GetNextSegment();
 	} while (segment);
 

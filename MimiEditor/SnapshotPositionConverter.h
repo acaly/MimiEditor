@@ -11,10 +11,8 @@ namespace Mimi
 	{
 		friend class Snapshot;
 
-	private:
-		SnapshotPositionConverter(Snapshot* s);
-
 	public:
+		SnapshotPositionConverter(Snapshot* s);
 		SnapshotPositionConverter(const SnapshotPositionConverter&) = delete;
 		SnapshotPositionConverter(SnapshotPositionConverter&&) = delete;
 		SnapshotPositionConverter& operator= (const SnapshotPositionConverter&) = delete;

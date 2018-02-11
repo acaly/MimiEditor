@@ -117,6 +117,9 @@
     <ClInclude Include="PixelFormat.h">
       <Filter>Header Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="SnapshotReader.h">
+      <Filter>Header Files\Storage</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">
@@ -133,9 +136,6 @@
     </ClCompile>
     <ClCompile Include="FileTypeDetector.cpp">
       <Filter>Source Files\Stream</Filter>
-    </ClCompile>
-    <ClCompile Include="Snapshot.cpp">
-      <Filter>Source Files\Storage</Filter>
     </ClCompile>
     <ClCompile Include="SnapshotPositionConverter.cpp">
       <Filter>Source Files\Storage</Filter>
@@ -154,6 +154,9 @@
     </ClCompile>
     <ClCompile Include="CodePageWindows.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SnapshotReader.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

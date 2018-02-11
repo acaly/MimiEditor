@@ -8,18 +8,22 @@ namespace Mimi
 {
 	class TextDocument;
 	class SnapshotPositionConverter;
+	class SnapshotReader;
 
 	//TODO use AbstractDocument instead of TextDocument.
 	class Snapshot final
 	{
 		friend class TextDocument;
+		friend class SnapshotPositionConverter;
+		friend class SnapshotReader;
 
-	public:
+	private:
 		Snapshot(TextDocument* doc, std::size_t historyIndex)
 			: Document(doc), HistoryIndex(historyIndex)
 		{
 		}
 
+	public:
 		Snapshot(const Snapshot&) = delete;
 		Snapshot(Snapshot&&) = delete;
 		Snapshot& operator= (const Snapshot&) = delete;
@@ -33,6 +37,7 @@ namespace Mimi
 		TextDocument* Document;
 		std::size_t HistoryIndex;
 		std::vector<StaticBuffer> BufferList;
+		std::size_t DataLength;
 
 	private:
 		void AppendBuffer(StaticBuffer buffer)
@@ -49,7 +54,7 @@ namespace Mimi
 			BufferList.clear();
 		}
 
-	public:
+	private:
 		TextDocument* GetDocument()
 		{
 			return Document;
@@ -59,7 +64,5 @@ namespace Mimi
 		{
 			return HistoryIndex;
 		}
-
-		SnapshotPositionConverter* CreatePositionConverter();
 	};
 }
