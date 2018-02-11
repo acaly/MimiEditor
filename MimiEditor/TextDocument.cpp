@@ -295,6 +295,14 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 	}
 }
 
+Mimi::TextDocument * Mimi::TextDocument::CreateEmpty(CodePage cp)
+{
+	TextSegment* s = new TextSegment(false, false, ModifiedFlag::NotModified);
+	TextDocument* doc = new TextDocument(s);
+	doc->TextEncoding = cp;
+	return doc;
+}
+
 Mimi::TextDocument* Mimi::TextDocument::CreateFromTextFile(FileTypeDetector* file)
 {
 	assert(file->ReadNextLine());
@@ -303,6 +311,7 @@ Mimi::TextDocument* Mimi::TextDocument::CreateFromTextFile(FileTypeDetector* fil
 		false, file->IsCurrentLineUnfinished(), ModifiedFlag::NotModified);
 
 	TextDocument* doc = new TextDocument(first);
+	doc->TextEncoding = file->GetCodePage();
 
 	while (file->ReadNextLine())
 	{

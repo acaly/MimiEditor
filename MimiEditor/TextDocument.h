@@ -117,6 +117,7 @@ namespace Mimi
 			DocumentPositionS* begin, DocumentPositionS* end);
 
 	public:
+		static TextDocument* CreateEmpty(CodePage cp);
 		static TextDocument* CreateFromTextFile(FileTypeDetector* file);
 	};
 }

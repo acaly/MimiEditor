@@ -18,6 +18,7 @@ namespace Mimi
 	class TextSegmentTree final
 	{
 		friend class TextSegmentList;
+		friend class TextDocument;
 		
 	public:
 		TextSegmentTree(TextDocument* document, TextSegment* element);
@@ -30,6 +31,9 @@ namespace Mimi
 		TextSegmentList* Root;
 
 	public:
+		//Public functions, exposed by TextDocument as part of document API.
+		//Read-only.
+
 		inline TextSegment* GetFirstSegment();
 		inline TextSegment* GetLastSegment();
 		inline std::size_t GetLineCount();
@@ -42,10 +46,9 @@ namespace Mimi
 		DocumentPositionS ConvertPositionFromL(DocumentPositionL i);
 		DocumentPositionD ConvertPositionToD(DocumentPositionS s);
 		DocumentPositionS ConvertPositionFromD(DocumentPositionD i);
-		//TODO convert data pos/char pos?
 
-	public:
-		//Public helper functions for modification
+	private:
+		//Helper functions for modification
 		void RemoveElement(TextSegment* e);
 
 		void InsertBefore(TextSegment* pos, TextSegment* newSegment);
