@@ -156,7 +156,7 @@
       <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="SnapshotReader.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Storage</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
