@@ -1,5 +1,4 @@
 #pragma once
-#include "Snapshot.h"
 #include "IFile.h"
 
 namespace Mimi
@@ -21,7 +20,7 @@ namespace Mimi
 		SnapshotReader& operator= (const SnapshotReader&) = delete;
 		~SnapshotReader() {}
 
-	public:
+	private:
 		Snapshot* SnapshotPtr;
 		std::size_t AbsPosition;
 		std::size_t BufferIndex;
