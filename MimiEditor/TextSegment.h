@@ -311,6 +311,9 @@ namespace Mimi
 		}
 
 	private:
+		void UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen);
+		void MoveLineLabels();
+
 		void MoveLabels(TextSegment* dest, std::size_t begin);
 
 		void LabelSplit(TextSegment* other, std::size_t pos)

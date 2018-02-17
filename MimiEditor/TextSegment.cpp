@@ -150,6 +150,7 @@ void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 void Mimi::TextSegment::Merge()
 {
 	TextSegment* other = GetNextSegment();
+	assert(other);
 
 	MakeActive();
 	other->MakeActive();
@@ -193,17 +194,213 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 
 	assert(pos < ActiveData->ContentBuffer.GetLength());
 	assert(sel < ActiveData->ContentBuffer.GetLength() - pos);
-	assert(content->GetLength() < MaxLength - (ActiveData->ContentBuffer.GetLength() - sel));
+	assert(content == nullptr ||
+		content->GetLength() < MaxLength - (ActiveData->ContentBuffer.GetLength() - sel));
 
-	std::size_t insertLen = content->GetLength();
+	std::size_t insertLen = content ? content->GetLength() : 0;
+
 	//Content
-	ActiveData->ContentBuffer.Replace(pos, sel, content->GetRawData(), insertLen);
+	ActiveData->ContentBuffer.Replace(pos, sel, content ? content->GetRawData() : nullptr, insertLen);
 	//Modification tracer
 	ActiveData->Modifications.Delete(pos, sel);
 	ActiveData->Modifications.Insert(pos, insertLen);
 	//Labels
+	UpdateLabels(pos, sel, insertLen);
+	//Event
+	GetParent()->OnElementDataChanged(); //TODO Called at document level API?
+}
+
+void Mimi::TextSegment::CheckAndMakeInactive(std::uint32_t time)
+{
+	if (IsActive() && ActiveData->LastModifiedTime < time &&
+		GetDocument()->GetSnapshotCount() == 0)
+	{
+		MakeInactive();
+	}
+}
+
+void Mimi::TextSegment::EnsureInsertionSize(std::size_t pos, std::size_t size,
+	DocumentPositionS* before, DocumentPositionS* after)
+{
+	assert(size < MaxLength);
+	if (GetCurrentLength() + size < MaxLength)
+	{
+		if (before)
+		{
+			*before = { this, pos };
+		}
+		if (after)
+		{
+			*after = { this, pos + size };
+		}
+	}
+	else if (pos + size < MaxLength)
+	{
+		Split(pos, false); //This will not produce empty segment.
+		if (before)
+		{
+			*before = { this, pos };
+		}
+		if (after)
+		{
+			*after = { GetNextSegment(), 0 };
+		}
+	}
+	else
+	{
+		Split(pos, false); //This will not produce empty segment.
+		TextSegment* next2 = GetNextSegment();
+		Split(pos, false); //A temporary empty segment.
+		TextSegment* next = GetNextSegment();
+		if (before)
+		{
+			*before = { next, 0 };
+		}
+		if (after)
+		{
+			*after = { next2, 0 };
+		}
+	}
+}
+
+static char32_t GetLastChar(const Mimi::mchar8_t* bufferEnd, Mimi::CodePage cp)
+{
+	std::size_t len = cp.GetNormalWidth();
+	const Mimi::mchar8_t* ch = bufferEnd - len;
+	char32_t ret;
+	if (cp.CharToUTF32(ch, &ret) != len)
+	{
+		return 0;
+	}
+	return ret;
+}
+
+bool Mimi::TextSegment::HasLineBreak()
+{
+	if (GetCurrentLength() == 0)
+	{
+		return false;
+	}
+	const Mimi::mchar8_t* bufferEnd;
+	if (IsActive())
+	{
+		bufferEnd = &ActiveData->ContentBuffer.GetRawData()[ActiveData->ContentBuffer.GetLength()];
+	}
+	else
+	{
+		bufferEnd = &ContentBuffer.GetRawData()[ContentBuffer.GetSize()];
+	}
+	return GetLastChar(bufferEnd, GetDocument()->TextEncoding) == '\n';
+}
+
+void Mimi::TextSegment::CheckLineBreak()
+{
+	bool check = HasLineBreak();
+	if (!IsUnfinished() && check)
+	{
+		if (GetNextSegment())
+		{
+			Merge();
+		}
+	}
+	else if (IsUnfinished() && !check)
+	{
+		Continuous.SetUnfinished(false);
+		TextSegment* other = GetNextSegment();
+		if (other)
+		{
+			other->Continuous.SetContinuous(false);
+		}
+	}
+}
+
+Mimi::StaticBuffer Mimi::TextSegment::MakeSnapshot(bool resize)
+{
+	//Start tracing
+	std::size_t cap = GetDocument()->GetSnapshotCapacity();
+	std::size_t count = GetDocument()->GetSnapshotCount();
+	assert(cap >= count);
+	if (IsActive())
+	{
+		if (resize)
+		{
+			ActiveData->Modifications.Resize(cap);
+		}
+		ActiveData->Modifications.NewSnapshot(count, ActiveData->ContentBuffer.GetLength());
+	}
+
+	//Make a buffer
+	if (!IsActive())
+	{
+		return ContentBuffer.NewRef();
+	}
+	else if (!Modified.SinceSnapshot() && !ActiveData->SnapshotCache.IsNull())
+	{
+		return ActiveData->SnapshotCache.NewRef();
+	}
+	else
+	{
+		StaticBuffer ret = ActiveData->ContentBuffer.MakeStaticBuffer();
+		ActiveData->SnapshotCache.TryClearRef();
+		ActiveData->SnapshotCache = ret;
+		Modified.ClearSnapshot();
+		return ret.NewRef();
+	}
+}
+
+void Mimi::TextSegment::DisposeSnapshot(std::size_t num, bool resize)
+{
+	if (IsActive())
+	{
+		std::size_t newNum = GetDocument()->GetSnapshotCount();
+		ActiveData->Modifications.DisposeSnapshot(newNum + num, newNum);
+		if (resize)
+		{
+			ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
+		}
+	}
+}
+
+std::size_t Mimi::TextSegment::ConvertSnapshotPosition(std::size_t snapshot, std::size_t pos, int dir)
+{
+	if (IsActive())
+	{
+		return ActiveData->Modifications.ConvertFromSnapshot(snapshot, pos, dir);
+	}
+	return pos;
+}
+
+std::size_t Mimi::TextSegment::GetHistoryLength(std::size_t snapshot)
+{
+	if (IsActive())
+	{
+		return ActiveData->Modifications.GetSnapshotLength(snapshot);
+	}
+	return GetCurrentLength();
+}
+
+void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen)
+{
 	std::size_t i = FirstLabel();
 	std::size_t totalLen = GetCurrentLength();
+
+	//Special case: insert to temporary empty segment (see EnsureInsertionSize & TextDocument::Insert).
+	if (totalLen == insertLen)
+	{
+		assert(IsContinuous());
+		assert(pos == 0 && sel == 0);
+		while (NextLabel(&i))
+		{
+			LabelData* label = ReadLabelData(i);
+			assert((label->Type & LabelType::Topology) == LabelType::Range);
+			assert(label->Type & LabelType::Continuous);
+			assert(label[0].Position == 0);
+			assert(label[1].Position + 1 == 0);
+			label[1].Position = static_cast<std::uint16_t>(totalLen - 1);
+		}
+		return;
+	}
+
 	while (NextLabel(&i))
 	{
 		LabelData* label = ReadLabelData(i);
@@ -280,18 +477,26 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 			}
 			else
 			{
-				//Update two sides
-				if (pos1 >= pos && pos1 < pos + sel && !(label->Type & LabelType::Continuous))
+				//Update one of the two sides.
+				if (pos1 >= pos && pos1 < pos + sel)
 				{
-					label[0].Position = static_cast<std::uint16_t>(pos + insertLen);
+					if (!(label->Type & LabelType::Continuous))
+					{
+						label[0].Position = static_cast<std::uint16_t>(pos + insertLen);
+					} //else: keep it at 0.
+					label[1].Position -= static_cast<std::uint16_t>(sel);
+					label[1].Position += static_cast<std::uint16_t>(insertLen);
 				}
-				if (pos2 >= pos && pos2 < pos + sel)
+				else if (pos2 >= pos && pos2 < pos + sel)
 				{
-					label[1].Position = static_cast<std::uint16_t>(pos);
-				}
-				if (label->Type & LabelType::Unfinished)
-				{
-					label[1].Position = static_cast<std::uint16_t>(totalLen - 1);
+					if (label->Type & LabelType::Unfinished)
+					{
+						label[1].Position = static_cast<std::uint16_t>(totalLen - 1);
+					}
+					else
+					{
+						label[1].Position = static_cast<std::uint16_t>(pos);
+					}
 				}
 			}
 			break;
@@ -303,173 +508,29 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 			assert(!"Unknown label type.");
 		}
 	}
-	GetParent()->OnElementDataChanged();
 }
 
-void Mimi::TextSegment::CheckAndMakeInactive(std::uint32_t time)
+void Mimi::TextSegment::MoveLineLabels()
 {
-	if (IsActive() && ActiveData->LastModifiedTime < time &&
-		GetDocument()->GetSnapshotCount() == 0)
+	if (!IsContinuous() && IsUnfinished())
 	{
-		MakeInactive();
-	}
-}
+		TextSegment* target = GetNextSegment();
+		assert(target && target->IsContinuous());
 
-void Mimi::TextSegment::EnsureInsertionSize(std::size_t pos, std::size_t size,
-	DocumentPositionS* before, DocumentPositionS* after)
-{
-	assert(size < MaxLength);
-	if (GetCurrentLength() + size < MaxLength)
-	{
-		if (before)
+		std::size_t i = FirstLabel();
+		while (NextLabel(&i))
 		{
-			*before = { this, pos };
-		}
-		if (after)
-		{
-			*after = { this, pos };
+			LabelData* label = ReadLabelData(i);
+			if ((label->Type & LabelType::Topology) == LabelType::Line)
+			{
+				//Line label is not that many. We can just move one by one.
+				std::size_t labelLen = GetLabelLength(label);
+				std::size_t newIndex = target->AllocateLabelSpace(labelLen);
+				std::memcpy(target->ReadLabelData(newIndex), label, sizeof(LabelData) * labelLen);
+				NotifyLabelOwnerChanged(target, i, newIndex);
+			}
 		}
 	}
-	else if (pos + size < MaxLength)
-	{
-		Split(pos, false);
-		if (before)
-		{
-			*before = { this, pos };
-		}
-		if (after)
-		{
-			*after = { GetNextSegment(), 0 };
-		}
-	}
-	else
-	{
-		Split(pos, false);
-		TextSegment* next2 = GetNextSegment();
-		Split(pos, false);
-		TextSegment* next = GetNextSegment();
-		if (before)
-		{
-			*before = { next, 0 };
-		}
-		if (after)
-		{
-			*after = { next2, 0 };
-		}
-	}
-}
-
-static char32_t GetLastChar(const Mimi::mchar8_t* bufferEnd, Mimi::CodePage cp)
-{
-	std::size_t len = cp.GetNormalWidth();
-	const Mimi::mchar8_t* ch = bufferEnd - len;
-	char32_t ret;
-	if (cp.CharToUTF32(ch, &ret) != len)
-	{
-		return 0;
-	}
-	return ret;
-}
-
-bool Mimi::TextSegment::HasLineBreak()
-{
-	if (GetCurrentLength() == 0)
-	{
-		return false;
-	}
-	const Mimi::mchar8_t* bufferEnd;
-	if (IsActive())
-	{
-		bufferEnd = &ActiveData->ContentBuffer.GetRawData()[ActiveData->ContentBuffer.GetLength()];
-	}
-	else
-	{
-		bufferEnd = &ContentBuffer.GetRawData()[ContentBuffer.GetSize()];
-	}
-	return GetLastChar(bufferEnd, GetDocument()->TextEncoding) == '\n';
-}
-
-void Mimi::TextSegment::CheckLineBreak()
-{
-	bool check = HasLineBreak();
-	if (!IsUnfinished() && check)
-	{
-		Merge();
-	}
-	else if (IsUnfinished() && !check)
-	{
-		Continuous.SetUnfinished(false);
-		TextSegment* other = GetNextSegment();
-		if (other)
-		{
-			other->Continuous.SetContinuous(false);
-		}
-	}
-}
-
-Mimi::StaticBuffer Mimi::TextSegment::MakeSnapshot(bool resize)
-{
-	//Start tracing
-	std::size_t cap = GetDocument()->GetSnapshotCapacity();
-	std::size_t count = GetDocument()->GetSnapshotCount();
-	assert(cap >= count);
-	if (IsActive())
-	{
-		if (resize)
-		{
-			ActiveData->Modifications.Resize(cap);
-		}
-		ActiveData->Modifications.NewSnapshot(count, ActiveData->ContentBuffer.GetLength());
-	}
-
-	//Make a buffer
-	if (!IsActive())
-	{
-		return ContentBuffer.NewRef();
-	}
-	else if (!Modified.SinceSnapshot() && !ActiveData->SnapshotCache.IsNull())
-	{
-		return ActiveData->SnapshotCache.NewRef();
-	}
-	else
-	{
-		StaticBuffer ret = ActiveData->ContentBuffer.MakeStaticBuffer();
-		ActiveData->SnapshotCache.TryClearRef();
-		ActiveData->SnapshotCache = ret;
-		Modified.ClearSnapshot();
-		return ret.NewRef();
-	}
-}
-
-void Mimi::TextSegment::DisposeSnapshot(std::size_t num, bool resize)
-{
-	if (IsActive())
-	{
-		std::size_t newNum = GetDocument()->GetSnapshotCount();
-		ActiveData->Modifications.DisposeSnapshot(newNum + num, newNum);
-		if (resize)
-		{
-			ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
-		}
-	}
-}
-
-std::size_t Mimi::TextSegment::ConvertSnapshotPosition(std::size_t snapshot, std::size_t pos, int dir)
-{
-	if (IsActive())
-	{
-		return ActiveData->Modifications.ConvertFromSnapshot(snapshot, pos, dir);
-	}
-	return pos;
-}
-
-std::size_t Mimi::TextSegment::GetHistoryLength(std::size_t snapshot)
-{
-	if (IsActive())
-	{
-		return ActiveData->Modifications.GetSnapshotLength(snapshot);
-	}
-	return GetCurrentLength();
 }
 
 void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
@@ -601,6 +662,8 @@ void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 			splitLabelNext->Type |= LabelType::Continuous;
 			splitLabelNext->Handler = label->Handler;
 			splitLabelNext->Position = 0;
+			//Note that split at the end of a segment is allowed (temporarily).
+			//This may give end position of -1 (0xFFFF), which will be updated when we insert back.
 			splitLabelNext[1].Position = static_cast<std::uint16_t>(label[1].Position - begin);
 
 			//Update old

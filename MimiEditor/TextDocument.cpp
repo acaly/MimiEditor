@@ -220,23 +220,35 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 	}
 	else
 	{
-		//Multiple segment
+		//Multiple segment.
 		begin.Segment->MarkModified(time);
 		begin.Segment->ReplaceText(begin.Position,
 			begin.Segment->GetCurrentLength() - begin.Position, nullptr);
 		TextSegment* s = begin.Segment->GetNextSegment();
+
+		//Check whether we should also delete the segment of end.
+		if (end.Position == end.Segment->GetCurrentLength())
+		{
+			end.Segment = end.Segment->GetNextSegment();
+			end.Position = 0;
+		}
+
 		while (s != end.Segment)
 		{
 			//TODO delete from the end to reduce actions required to update label owner.
 			TextSegment* removed = s->GetParent()->RemoveElement(s->GetIndexInList());
+			removed->UpdateLabels(0, removed->GetCurrentLength(), 0);
+			removed->MoveLineLabels();
 			s = s->GetNextSegment();
-			assert(s);
+			assert(!end.Segment || s);
 			delete removed;
 		}
-		end.Segment->MarkModified(time);
-		end.Segment->ReplaceText(0, end.Position, nullptr);
-		begin.Segment->CheckLineBreak();
-		end.Segment->CheckLineBreak();
+		if (end.Segment)
+		{
+			end.Segment->MarkModified(time);
+			end.Segment->ReplaceText(0, end.Position, nullptr);
+		}
+		begin.Segment->CheckLineBreak(); //This will also update end.Continuous.
 		return begin;
 	}
 }
