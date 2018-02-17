@@ -27,10 +27,7 @@ namespace Mimi
 		std::size_t BufferOffset;
 
 	public:
-		std::uint32_t GetSize()
-		{
-			return SnapshotPtr->DataLength;
-		}
+		std::size_t GetSize();
 
 		bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead);
 		bool Skip(std::size_t num);
@@ -65,7 +62,7 @@ namespace Mimi
 	public:
 		virtual std::uint32_t GetSize() override
 		{
-			return Reader.GetSize();
+			return static_cast<std::uint32_t>(Reader.GetSize());
 		}
 
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override

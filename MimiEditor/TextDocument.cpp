@@ -227,6 +227,7 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 		TextSegment* s = begin.Segment->GetNextSegment();
 		while (s != end.Segment)
 		{
+			//TODO delete from the end to reduce actions required to update label owner.
 			TextSegment* removed = s->GetParent()->RemoveElement(s->GetIndexInList());
 			s = s->GetNextSegment();
 			assert(s);
@@ -327,7 +328,7 @@ Mimi::TextDocument* Mimi::TextDocument::CreateFromTextFile(FileTypeDetector* fil
 	return doc;
 }
 
-bool Mimi::LabelOwnerChangedEvent::Update(DocumentLabelIndex * label)
+bool Mimi::LabelOwnerChangedEvent::Update(DocumentLabelIndex* label)
 {
 	if (label->Segment != OldOwner)
 	{
@@ -335,6 +336,12 @@ bool Mimi::LabelOwnerChangedEvent::Update(DocumentLabelIndex * label)
 	}
 	std::size_t pos = label->Segment->ReadLabelData(label->Index)->Position;
 	if (pos >= BeginPosition && pos < EndPosition)
+	{
+		label->Segment = NewOwner;
+		label->Index += IndexChange;
+		return true;
+	}
+	if (label->Index == SingleId)
 	{
 		label->Segment = NewOwner;
 		label->Index += IndexChange;

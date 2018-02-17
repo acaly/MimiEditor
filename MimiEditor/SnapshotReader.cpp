@@ -1,4 +1,11 @@
 #include "SnapshotReader.h"
+#include "Buffer.h"
+#include "Snapshot.h"
+
+std::size_t Mimi::SnapshotReader::GetSize()
+{
+	return SnapshotPtr->DataLength;
+}
 
 bool Mimi::SnapshotReader::Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead)
 {

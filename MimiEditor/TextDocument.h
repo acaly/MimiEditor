@@ -24,6 +24,7 @@ namespace Mimi
 		std::size_t BeginPosition;
 		std::size_t EndPosition;
 		std::ptrdiff_t IndexChange;
+		std::size_t SingleId;
 
 	public:
 		bool Update(DocumentLabelIndex* label);

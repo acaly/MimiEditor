@@ -325,6 +325,7 @@ namespace Mimi
 		}
 
 		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
+		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t id, std::size_t newId);
 		void NotifyLabelRemoved(std::size_t index);
 	};
 }

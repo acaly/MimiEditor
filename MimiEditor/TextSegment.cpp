@@ -237,8 +237,45 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 			std::uint16_t pos2 = label[1].Position;
 			if (pos1 >= pos && pos2 < pos + sel)
 			{
-				//Remove
-				NotifyLabelRemoved(i);
+				bool continuous = label->Type & LabelType::Continuous;
+				bool unfinished = label->Type & LabelType::Unfinished;
+				if (continuous && unfinished)
+				{
+					//Update link.
+					std::uint16_t prev = label[1].Previous;
+					std::uint16_t next = label[1].Next;
+					assert(GetNextSegment() && GetPreviousSegment());
+					LabelData* lprev = GetPreviousSegment()->ReadLabelData(prev);
+					LabelData* lnext = GetNextSegment()->ReadLabelData(next);
+					assert(lprev[1].Next == i);
+					assert(lnext[1].Previous == i);
+					lprev[1].Next = next;
+					lnext[1].Previous = prev;
+				}
+				else if (continuous)
+				{
+					//Update previous.
+					std::uint16_t prev = label[1].Previous;
+					assert(GetPreviousSegment());
+					LabelData* lprev = GetPreviousSegment()->ReadLabelData(prev);
+					assert(lprev[1].Next == i);
+					lprev->Type &= ~LabelType::Unfinished;
+				}
+				else if (unfinished)
+				{
+					//Update next and notify owner change.
+					std::uint16_t next = label[1].Next;
+					assert(GetNextSegment());
+					LabelData* lnext = GetNextSegment()->ReadLabelData(next);
+					assert(lnext[1].Previous == i);
+					lnext->Type &= ~LabelType::Continuous;
+					NotifyLabelOwnerChanged(GetNextSegment(), i, next);
+				}
+				else
+				{
+					//Just remove
+					NotifyLabelRemoved(i);
+				}
 				EraseLabelSpace(i, GetLabelLength(label));
 			}
 			else
@@ -594,6 +631,19 @@ void Mimi::TextSegment::NotifyLabelOwnerChanged(TextSegment * newOwner, std::siz
 	e.BeginPosition = begin;
 	e.EndPosition = end;
 	e.IndexChange = change;
+	e.SingleId = SIZE_MAX; //Id is in uint16_t, single id test always fails.
+	GetDocument()->LabelOwnerChanged.InvokeAll(&e);
+}
+
+void Mimi::TextSegment::NotifyLabelOwnerChanged(TextSegment * newOwner, std::size_t id, std::size_t newId)
+{
+	LabelOwnerChangedEvent e;
+	e.OldOwner = this;
+	e.NewOwner = newOwner;
+	e.BeginPosition = 1; //begin > end, so that range test always fails.
+	e.EndPosition = 0;
+	e.IndexChange = static_cast<std::ptrdiff_t>(newId) - static_cast<std::ptrdiff_t>(id);
+	e.SingleId = id;
 	GetDocument()->LabelOwnerChanged.InvokeAll(&e);
 }
 
