@@ -181,7 +181,8 @@ void Mimi::TextDocument::RemoveLabel(DocumentLabelIndex label)
 
 	if (d->Type & LabelType::Referred)
 	{
-		s->NotifyLabelRemoved(label.Index);
+		DocumentPositionD d = SegmentTree.ConvertPositionToD({ s, 0 });
+		s->NotifyLabelRemoved(label.Index, d);
 	}
 
 	while (d->Type & LabelType::Unfinished)
@@ -211,11 +212,13 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 	assert(begin.Segment == end.Segment ||
 		TextSegment::ComparePosition(begin.Segment, end.Segment) < 0);
 
+	DocumentPositionD g = SegmentTree.ConvertPositionToD({ begin.Segment, 0 });
+
 	if (begin.Segment == end.Segment)
 	{
 		//Single segment
 		begin.Segment->MarkModified(time);
-		begin.Segment->ReplaceText(begin.Position, end.Position - begin.Position, nullptr);
+		begin.Segment->ReplaceText(begin.Position, end.Position - begin.Position, nullptr, g.Position);
 		return begin;
 	}
 	else
@@ -223,7 +226,9 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 		//Multiple segment.
 		begin.Segment->MarkModified(time);
 		begin.Segment->ReplaceText(begin.Position,
-			begin.Segment->GetCurrentLength() - begin.Position, nullptr);
+			begin.Segment->GetCurrentLength() - begin.Position, nullptr, g.Position);
+
+		g.Position += begin.Segment->GetCurrentLength();
 		TextSegment* s = begin.Segment->GetNextSegment();
 
 		//Check whether we should also delete the segment of end.
@@ -235,17 +240,21 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 
 		while (s != end.Segment)
 		{
-			//TODO delete from the end to reduce actions required to update label owner.
 			TextSegment* removed = s->GetParent()->RemoveElement(s->GetIndexInList());
-			removed->UpdateLabelsDeleteAll(begin.Segment, end.Segment);
-			s = s->GetNextSegment();
+			assert(removed == s);
+
+			removed->UpdateLabelsDeleteAll(begin.Segment, end.Segment, g.Position);
+
+			g.Position += removed->GetCurrentLength();
+			s = removed->GetNextSegment();
+			
 			assert(!end.Segment || s);
 			delete removed;
 		}
 		if (end.Segment)
 		{
 			end.Segment->MarkModified(time);
-			end.Segment->ReplaceText(0, end.Position, nullptr);
+			end.Segment->ReplaceText(0, end.Position, nullptr, g.Position);
 		}
 		begin.Segment->CheckLineBreak(); //This will also update end.Continuous.
 		return begin;
@@ -278,13 +287,23 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 {
 	assert(CheckInsertBuffer(TextEncoding, content, hasNewline));
 
+	//Don't insert after newline character.
+	assert(pos.Segment->IsUnfinished() || pos.Position < pos.Segment->GetCurrentLength());
+
+	DocumentPositionD d = SegmentTree.ConvertPositionToD({ pos.Segment, 0 });
+
 	if (hasNewline)
 	{
 		pos.Segment->MarkModified(time);
 		DocumentPositionS nextPos = pos.Segment->InsertLineBreak(pos.Position);
 		DocumentPositionS newPos;
+
+		//When using EnsureInsertionSize, we must convert the position accordingly.
+		d.Position += pos.Position;
 		pos.Segment->EnsureInsertionSize(pos.Position, content.GetLength(), &newPos);
-		newPos.Segment->ReplaceText(newPos.Position, 0, &content);
+		d.Position -= newPos.Position;
+
+		newPos.Segment->ReplaceText(newPos.Position, 0, &content, d.Position);
 		if (begin)
 		{
 			*begin = newPos;
@@ -298,8 +317,13 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 	{
 		pos.Segment->MarkModified(time);
 		DocumentPositionS newPos1, newPos2;
+
+		//When using EnsureInsertionSize, we must convert the position accordingly.
+		d.Position += pos.Position;
 		pos.Segment->EnsureInsertionSize(pos.Position, content.GetLength(), &newPos1, &newPos2);
-		newPos1.Segment->ReplaceText(newPos1.Position, 0, &content);
+		d.Position -= newPos1.Position;
+
+		newPos1.Segment->ReplaceText(newPos1.Position, 0, &content, d.Position);
 		if (begin)
 		{
 			*begin = newPos1;

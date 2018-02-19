@@ -195,7 +195,7 @@ namespace Mimi
 
 	public:
 		//Change content and update labels.
-		void ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content);
+		void ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content, std::size_t globalPosition);
 
 		void MarkModified(std::uint32_t time)
 		{
@@ -311,10 +311,13 @@ namespace Mimi
 		}
 
 	private:
-		void UpdateRangeLabel(std::size_t i, std::size_t pos, std::size_t sel, std::size_t insertLen);
+		void UpdateRangeLabel(std::size_t i, std::size_t pos, std::size_t sel,
+			std::size_t insertLen, std::size_t globalPosition);
 
-		void UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen);
-		void UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment* moveForward);
+		void UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen,
+			std::size_t globalPosition);
+		void UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment* moveForward,
+			std::size_t globalPosition);
 
 		void MoveLabels(TextSegment* dest, std::size_t begin);
 
@@ -331,6 +334,6 @@ namespace Mimi
 
 		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t begin, std::size_t end, std::ptrdiff_t change);
 		void NotifyLabelOwnerChanged(TextSegment* newOwner, std::size_t id, std::size_t newId);
-		void NotifyLabelRemoved(std::size_t index);
+		void NotifyLabelRemoved(std::size_t index, std::size_t globalPosition);
 	};
 }

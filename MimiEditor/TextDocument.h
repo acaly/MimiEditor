@@ -33,9 +33,11 @@ namespace Mimi
 	class LabelRemovedEvent
 	{
 		friend class TextSegment;
+
 	private:
 		TextSegment* Owner;
 		std::size_t Index;
+		std::size_t GlobalPosition;
 
 	public:
 		bool IsRemoved(DocumentLabelIndex label)
@@ -43,9 +45,13 @@ namespace Mimi
 			return label.Segment == Owner && label.Index == Index;
 		}
 
-		//TODO provide absolute position before removed.
-		//This allows API user to recover the label when
-		//the modification is undone.
+		//This is the global position of the segment, but the API user can
+		//easily calculate the position of the label based on the label data,
+		//which has not been erased when this event is fired.
+		std::size_t GetSegmentGlobalPosition()
+		{
+			return GlobalPosition;
+		}
 	};
 
 	class TextDocument final

@@ -112,6 +112,7 @@ void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 
 	if (newLine && pos == 0)
 	{
+		//Note that we don't update data here, as it will be done after spliting.
 		assert(IsContinuous());
 		assert(GetPreviousSegment() && GetPreviousSegment()->IsUnfinished());
 		Continuous.SetContinuous(false);
@@ -120,6 +121,7 @@ void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 	}
 	if (newLine && pos == GetCurrentLength())
 	{
+		//Note that we don't update data here, as it will be done after spliting.
 		assert(IsUnfinished());
 		assert(GetNextSegment() && GetNextSegment()->IsContinuous());
 		Continuous.SetUnfinished(false);
@@ -188,7 +190,7 @@ void Mimi::TextSegment::Merge()
 	delete other;
 }
 
-void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content)
+void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuffer* content, std::size_t globalPosition)
 {
 	MakeActive();
 
@@ -205,7 +207,7 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 	ActiveData->Modifications.Delete(pos, sel);
 	ActiveData->Modifications.Insert(pos, insertLen);
 	//Labels
-	UpdateLabels(pos, sel, insertLen);
+	UpdateLabels(pos, sel, insertLen, globalPosition);
 	//Event
 	GetParent()->OnElementDataChanged(); //TODO Called at document level API?
 }
@@ -379,7 +381,8 @@ std::size_t Mimi::TextSegment::GetHistoryLength(std::size_t snapshot)
 	return GetCurrentLength();
 }
 
-void Mimi::TextSegment::UpdateRangeLabel(std::size_t i, std::size_t pos, std::size_t sel, std::size_t insertLen)
+void Mimi::TextSegment::UpdateRangeLabel(std::size_t i, std::size_t pos, std::size_t sel,
+	std::size_t insertLen, std::size_t globalPosition)
 {
 	LabelData* label = ReadLabelData(i);
 
@@ -424,7 +427,10 @@ void Mimi::TextSegment::UpdateRangeLabel(std::size_t i, std::size_t pos, std::si
 		else
 		{
 			//Just remove
-			NotifyLabelRemoved(i);
+			if (label->Type & LabelType::Referred)
+			{
+				NotifyLabelRemoved(i, globalPosition);
+			}
 		}
 		EraseLabelSpace(i, GetLabelLength(label));
 	}
@@ -455,7 +461,7 @@ void Mimi::TextSegment::UpdateRangeLabel(std::size_t i, std::size_t pos, std::si
 	}
 }
 
-void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen)
+void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen, std::size_t globalPosition)
 {
 	std::size_t i = FirstLabel();
 	std::size_t totalLen = GetCurrentLength();
@@ -496,7 +502,10 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 					label->Position = static_cast<std::uint16_t>(pos);
 					break;
 				case LabelType::Center:
-					NotifyLabelRemoved(i);
+					if (label->Type & LabelType::Referred)
+					{
+						NotifyLabelRemoved(i, globalPosition);
+					}
 					EraseLabelSpace(i, GetLabelLength(label));
 					break;
 				default:
@@ -506,7 +515,7 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 		}
 		case LabelType::Range:
 		{
-			UpdateRangeLabel(i, pos, sel, insertLen);
+			UpdateRangeLabel(i, pos, sel, insertLen, globalPosition);
 			break;
 		}
 		case LabelType::Line:
@@ -518,7 +527,7 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 	}
 }
 
-void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment* moveForward)
+void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment* moveForward, std::size_t globalPosition)
 {
 	TextSegment* target = GetNextSegment();
 	if (!IsContinuous() && IsUnfinished())
@@ -547,7 +556,7 @@ void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment
 			{
 				if (label->Type & LabelType::Referred)
 				{
-					NotifyLabelRemoved(i);
+					NotifyLabelRemoved(i, globalPosition);
 				}
 			}
 			break;
@@ -556,7 +565,10 @@ void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment
 			switch (label->Type & LabelType::Alignment)
 			{
 			case LabelType::Center:
-				NotifyLabelRemoved(i);
+				if (label->Type & LabelType::Referred)
+				{
+					NotifyLabelRemoved(i, globalPosition);
+				}
 				//No need to move the label. Continue the loop.
 				continue;
 			case LabelType::Left:
@@ -578,7 +590,7 @@ void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment
 			}
 			break;
 		case LabelType::Range:
-			UpdateRangeLabel(i, 0, currentLen, 0);
+			UpdateRangeLabel(i, 0, currentLen, 0, globalPosition);
 			break;
 		default:
 			assert(!"Invalid label type.");
@@ -764,10 +776,11 @@ void Mimi::TextSegment::NotifyLabelOwnerChanged(TextSegment * newOwner, std::siz
 	GetDocument()->LabelOwnerChanged.InvokeAll(&e);
 }
 
-void Mimi::TextSegment::NotifyLabelRemoved(std::size_t index)
+void Mimi::TextSegment::NotifyLabelRemoved(std::size_t index, std::size_t globalPosition)
 {
 	LabelRemovedEvent e;
 	e.Owner = this;
 	e.Index = index;
+	e.GlobalPosition = globalPosition;
 	GetDocument()->LabelRemoved.InvokeAll(&e);
 }
