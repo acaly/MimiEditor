@@ -311,8 +311,10 @@ namespace Mimi
 		}
 
 	private:
+		void UpdateRangeLabel(std::size_t i, std::size_t pos, std::size_t sel, std::size_t insertLen);
+
 		void UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen);
-		void MoveLineLabels();
+		void UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment* moveForward);
 
 		void MoveLabels(TextSegment* dest, std::size_t begin);
 

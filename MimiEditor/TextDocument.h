@@ -42,6 +42,10 @@ namespace Mimi
 		{
 			return label.Segment == Owner && label.Index == Index;
 		}
+
+		//TODO provide absolute position before removed.
+		//This allows API user to recover the label when
+		//the modification is undone.
 	};
 
 	class TextDocument final

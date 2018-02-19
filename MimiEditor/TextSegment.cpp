@@ -379,6 +379,82 @@ std::size_t Mimi::TextSegment::GetHistoryLength(std::size_t snapshot)
 	return GetCurrentLength();
 }
 
+void Mimi::TextSegment::UpdateRangeLabel(std::size_t i, std::size_t pos, std::size_t sel, std::size_t insertLen)
+{
+	LabelData* label = ReadLabelData(i);
+
+	std::uint16_t pos1 = label[0].Position;
+	std::uint16_t pos2 = label[1].Position;
+	if (pos1 >= pos && pos2 < pos + sel)
+	{
+		bool continuous = label->Type & LabelType::Continuous;
+		bool unfinished = label->Type & LabelType::Unfinished;
+		if (continuous && unfinished)
+		{
+			//Update link.
+			std::uint16_t prev = label[1].Previous;
+			std::uint16_t next = label[1].Next;
+			assert(GetNextSegment() && GetPreviousSegment());
+			LabelData* lprev = GetPreviousSegment()->ReadLabelData(prev);
+			LabelData* lnext = GetNextSegment()->ReadLabelData(next);
+			assert(lprev[1].Next == i);
+			assert(lnext[1].Previous == i);
+			lprev[1].Next = next;
+			lnext[1].Previous = prev;
+		}
+		else if (continuous)
+		{
+			//Update previous.
+			std::uint16_t prev = label[1].Previous;
+			assert(GetPreviousSegment());
+			LabelData* lprev = GetPreviousSegment()->ReadLabelData(prev);
+			assert(lprev[1].Next == i);
+			lprev->Type &= ~LabelType::Unfinished;
+		}
+		else if (unfinished)
+		{
+			//Update next and notify owner change.
+			std::uint16_t next = label[1].Next;
+			assert(GetNextSegment());
+			LabelData* lnext = GetNextSegment()->ReadLabelData(next);
+			assert(lnext[1].Previous == i);
+			lnext->Type &= ~LabelType::Continuous;
+			NotifyLabelOwnerChanged(GetNextSegment(), i, next);
+		}
+		else
+		{
+			//Just remove
+			NotifyLabelRemoved(i);
+		}
+		EraseLabelSpace(i, GetLabelLength(label));
+	}
+	else
+	{
+		//Update one of the two sides.
+		if (pos1 >= pos && pos1 < pos + sel)
+		{
+			if (!(label->Type & LabelType::Continuous))
+			{
+				label[0].Position = static_cast<std::uint16_t>(pos + insertLen);
+			} //else: keep it at 0.
+			label[1].Position -= static_cast<std::uint16_t>(sel);
+			label[1].Position += static_cast<std::uint16_t>(insertLen);
+		}
+		else if (pos2 >= pos && pos2 < pos + sel)
+		{
+			if (label->Type & LabelType::Unfinished)
+			{
+				std::size_t totalLen = GetCurrentLength();
+				label[1].Position = static_cast<std::uint16_t>(totalLen - 1);
+			}
+			else
+			{
+				label[1].Position = static_cast<std::uint16_t>(pos);
+			}
+		}
+	}
+}
+
 void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size_t insertLen)
 {
 	std::size_t i = FirstLabel();
@@ -430,75 +506,7 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 		}
 		case LabelType::Range:
 		{
-			std::uint16_t pos1 = label[0].Position;
-			std::uint16_t pos2 = label[1].Position;
-			if (pos1 >= pos && pos2 < pos + sel)
-			{
-				bool continuous = label->Type & LabelType::Continuous;
-				bool unfinished = label->Type & LabelType::Unfinished;
-				if (continuous && unfinished)
-				{
-					//Update link.
-					std::uint16_t prev = label[1].Previous;
-					std::uint16_t next = label[1].Next;
-					assert(GetNextSegment() && GetPreviousSegment());
-					LabelData* lprev = GetPreviousSegment()->ReadLabelData(prev);
-					LabelData* lnext = GetNextSegment()->ReadLabelData(next);
-					assert(lprev[1].Next == i);
-					assert(lnext[1].Previous == i);
-					lprev[1].Next = next;
-					lnext[1].Previous = prev;
-				}
-				else if (continuous)
-				{
-					//Update previous.
-					std::uint16_t prev = label[1].Previous;
-					assert(GetPreviousSegment());
-					LabelData* lprev = GetPreviousSegment()->ReadLabelData(prev);
-					assert(lprev[1].Next == i);
-					lprev->Type &= ~LabelType::Unfinished;
-				}
-				else if (unfinished)
-				{
-					//Update next and notify owner change.
-					std::uint16_t next = label[1].Next;
-					assert(GetNextSegment());
-					LabelData* lnext = GetNextSegment()->ReadLabelData(next);
-					assert(lnext[1].Previous == i);
-					lnext->Type &= ~LabelType::Continuous;
-					NotifyLabelOwnerChanged(GetNextSegment(), i, next);
-				}
-				else
-				{
-					//Just remove
-					NotifyLabelRemoved(i);
-				}
-				EraseLabelSpace(i, GetLabelLength(label));
-			}
-			else
-			{
-				//Update one of the two sides.
-				if (pos1 >= pos && pos1 < pos + sel)
-				{
-					if (!(label->Type & LabelType::Continuous))
-					{
-						label[0].Position = static_cast<std::uint16_t>(pos + insertLen);
-					} //else: keep it at 0.
-					label[1].Position -= static_cast<std::uint16_t>(sel);
-					label[1].Position += static_cast<std::uint16_t>(insertLen);
-				}
-				else if (pos2 >= pos && pos2 < pos + sel)
-				{
-					if (label->Type & LabelType::Unfinished)
-					{
-						label[1].Position = static_cast<std::uint16_t>(totalLen - 1);
-					}
-					else
-					{
-						label[1].Position = static_cast<std::uint16_t>(pos);
-					}
-				}
-			}
+			UpdateRangeLabel(i, pos, sel, insertLen);
 			break;
 		}
 		case LabelType::Line:
@@ -510,25 +518,71 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 	}
 }
 
-void Mimi::TextSegment::MoveLineLabels()
+void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment* moveForward)
 {
+	TextSegment* target = GetNextSegment();
 	if (!IsContinuous() && IsUnfinished())
 	{
-		TextSegment* target = GetNextSegment();
 		assert(target && target->IsContinuous());
+	}
 
-		std::size_t i = FirstLabel();
-		while (NextLabel(&i))
+	std::size_t currentLen = GetCurrentLength();
+
+	std::size_t i = FirstLabel();
+	while (NextLabel(&i))
+	{
+		LabelData* label = ReadLabelData(i);
+		switch (label->Type & LabelType::Topology)
 		{
-			LabelData* label = ReadLabelData(i);
-			if ((label->Type & LabelType::Topology) == LabelType::Line)
+		case LabelType::Line:
+			if (!IsContinuous() && IsUnfinished())
 			{
-				//Line label is not that many. We can just move one by one.
+				//Line label in unfinished line is not that many. We can just move one by one.
 				std::size_t labelLen = GetLabelLength(label);
 				std::size_t newIndex = target->AllocateLabelSpace(labelLen);
 				std::memcpy(target->ReadLabelData(newIndex), label, sizeof(LabelData) * labelLen);
 				NotifyLabelOwnerChanged(target, i, newIndex);
 			}
+			else
+			{
+				if (label->Type & LabelType::Referred)
+				{
+					NotifyLabelRemoved(i);
+				}
+			}
+			break;
+		case LabelType::Point:
+			TextSegment* dest;
+			switch (label->Type & LabelType::Alignment)
+			{
+			case LabelType::Center:
+				NotifyLabelRemoved(i);
+				//No need to move the label. Continue the loop.
+				continue;
+			case LabelType::Left:
+				dest = moveForward;
+				break;
+			case LabelType::Right:
+				dest = moveBack;
+				break;
+			default:
+				assert(!"Invalid label direction.");
+				continue; //Never get here. Avoid using dest.
+			}
+			if (dest)
+			{
+				std::size_t len = GetLabelLength(label);
+				std::size_t newIndex = dest->AllocateLabelSpace(len);
+				std::memcpy(dest->ReadLabelData(newIndex), label, len);
+				NotifyLabelOwnerChanged(dest, i, newIndex);
+			}
+			break;
+		case LabelType::Range:
+			UpdateRangeLabel(i, 0, currentLen, 0);
+			break;
+		default:
+			assert(!"Invalid label type.");
+			break;
 		}
 	}
 }

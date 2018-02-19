@@ -237,8 +237,7 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 		{
 			//TODO delete from the end to reduce actions required to update label owner.
 			TextSegment* removed = s->GetParent()->RemoveElement(s->GetIndexInList());
-			removed->UpdateLabels(0, removed->GetCurrentLength(), 0);
-			removed->MoveLineLabels();
+			removed->UpdateLabelsDeleteAll(begin.Segment, end.Segment);
 			s = s->GetNextSegment();
 			assert(!end.Segment || s);
 			delete removed;
