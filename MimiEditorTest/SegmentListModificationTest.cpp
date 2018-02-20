@@ -134,5 +134,18 @@ DEFINE_MODULE(TestSegmentListModification)
 			t.Append();
 		}
 		t.CheckList();
-	}
+	},
+	CASE("Insert long")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 200; ++i)
+		{
+			t.Append();
+		}
+		for (int i = 0; i < 10000; ++i)
+		{
+			t.Insert(100 + i);
+		}
+		t.CheckList();
+	},
 };

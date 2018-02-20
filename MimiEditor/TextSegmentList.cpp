@@ -68,7 +68,7 @@ Mimi::DocumentPositionS Mimi::TextSegmentTree::ConvertPositionFromL(DocumentPosi
 {
 	TextSegment* seg = GetSegmentWithLineIndex(l.Line);
 	std::size_t count = l.Position;
-	while (count < seg->GetCurrentLength())
+	while (count > seg->GetCurrentLength())
 	{
 		assert(seg->IsContinuous());
 		count -= seg->GetCurrentLength();

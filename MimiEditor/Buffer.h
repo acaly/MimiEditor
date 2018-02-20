@@ -330,6 +330,7 @@ namespace Mimi
 			other.EnsureInternalBuffer(pos, false);
 			CopyTo(other.Pointer, 0, pos);
 			Delete(0, pos);
+			other.Length = static_cast<std::uint16_t>(pos);
 		}
 
 		void SplitRight(DynamicBuffer& other, std::size_t pos)
@@ -338,6 +339,7 @@ namespace Mimi
 			other.EnsureInternalBuffer(move, false);
 			CopyTo(other.Pointer, pos, move);
 			Delete(pos, move);
+			other.Length = static_cast<std::uint16_t>(move);
 		}
 	};
 }
