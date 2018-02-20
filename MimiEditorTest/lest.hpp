@@ -1,3 +1,5 @@
+//Modified version of https://github.com/martinmoene/lest
+
 // Copyright 2013-2017 by Martin Moene
 //
 // lest is based on ideas by Kevlin Henney, see video at
@@ -166,8 +168,8 @@
         { \
             if ( lest::result score = lest_DECOMPOSE( expr ) ) \
                 throw lest::failure{ lest_LOCATION, #expr, score.decomposition }; \
-            else if ( lest_env.pass ) \
-                lest::report( lest_env.os, lest::passing{ lest_LOCATION, #expr, score.decomposition }, lest_env.testing ); \
+            else \
+                lest::report( lest_env.reporter, lest_env.os, lest::passing{ lest_LOCATION, #expr, score.decomposition }, lest_env.testing ); \
         } \
         catch(...) \
         { \
@@ -181,8 +183,7 @@
         { \
             if ( lest::result score = lest_DECOMPOSE( expr ) ) \
             { \
-                if ( lest_env.pass ) \
-                    lest::report( lest_env.os, lest::passing{ lest_LOCATION, lest::not_expr( #expr ), lest::not_expr( score.decomposition ) }, lest_env.testing ); \
+                lest::report( lest_env.reporter, lest_env.os, lest::passing{ lest_LOCATION, lest::not_expr( #expr ), lest::not_expr( score.decomposition ) }, lest_env.testing ); \
             } \
             else \
                 throw lest::failure{ lest_LOCATION, lest::not_expr( #expr ), lest::not_expr( score.decomposition ) }; \
@@ -204,8 +205,7 @@
         { \
             lest::inform( lest_LOCATION, #expr ); \
         } \
-        if ( lest_env.pass ) \
-            lest::report( lest_env.os, lest::got_none( lest_LOCATION, #expr ), lest_env.testing ); \
+        lest::report( lest_env.reporter, lest_env.os, lest::got_none( lest_LOCATION, #expr ), lest_env.testing ); \
     } while ( lest::is_false() )
 
 #define lest_EXPECT_THROWS( expr ) \
@@ -217,8 +217,7 @@
         } \
         catch (...) \
         { \
-            if ( lest_env.pass ) \
-                lest::report( lest_env.os, lest::got{ lest_LOCATION, #expr }, lest_env.testing ); \
+            lest::report( lest_env.reporter, lest_env.os, lest::got{ lest_LOCATION, #expr }, lest_env.testing ); \
             break; \
         } \
         throw lest::expected{ lest_LOCATION, #expr }; \
@@ -234,8 +233,7 @@
         }  \
         catch ( excpt & ) \
         { \
-            if ( lest_env.pass ) \
-                lest::report( lest_env.os, lest::got{ lest_LOCATION, #expr, lest::of_type( #excpt ) }, lest_env.testing ); \
+            lest::report( lest_env.reporter, lest_env.os, lest::got{ lest_LOCATION, #expr, lest::of_type( #excpt ) }, lest_env.testing ); \
             break; \
         } \
         catch (...) {} \
@@ -379,6 +377,18 @@ struct unexpected : message
 {
     unexpected( location where, text expr, text note = "" )
     : message{ "failed: got unexpected exception", where, expr, note } {}
+};
+
+struct before_test : message
+{
+    before_test()
+    : message{ "before test", { "", 0 }, "", "" } {}
+};
+
+struct after_test : message
+{
+    after_test()
+    : message{ "after test",{ "", 0 }, "", "" } {}
 };
 
 struct guard
@@ -747,6 +757,23 @@ struct expression_lhs
     template <typename R> result operator>=( R const & rhs ) { return result{ lhs >= rhs, to_string( lhs, ">=", rhs ) }; }
 };
 
+template <>
+struct expression_lhs<const bool &>
+{
+    bool val;
+    text str;
+
+    expression_lhs( bool lhs ) : val( lhs ), str( to_string( lhs )) {}
+    expression_lhs( bool val, text str ) : val( val ), str( str ) {}
+
+    operator result() { return result{ val, str }; }
+
+    expression_lhs<const bool &> operator&&( bool const & rhs )
+    {
+        return { val && rhs, str + "&&" + to_string(rhs) };
+    }
+};
+
 struct expression_decomposer
 {
     template <typename L>
@@ -805,6 +832,8 @@ inline std::ostream & operator<<( std::ostream & os, colourise words ) { return 
 inline text colourise( text words ) { return words; }
 #endif
 
+typedef std::function<void(const message&, const text&)> report_callback;
+
 inline text pluralise( text word, int n )
 {
     return n == 1 ? word : word + "s";
@@ -817,24 +846,19 @@ inline std::ostream & operator<<( std::ostream & os, comment note )
 
 inline std::ostream & operator<<( std::ostream & os, location where )
 {
-#if 0
-#ifdef __GNUG__
-    return os << where.file << ":" << where.line;
-#else
-    return os << where.file << "(" << where.line << ")";
-#endif
-#else
 	return os << where.file.substr(where.file.find_last_of("/\\") + 1) << ":" << where.line;
-#endif
 }
 
-inline void report( std::ostream & os, message const & e, text test )
+inline void report( report_callback reporter, std::ostream & os, message const & e, text test )
 {
-#if 0
-    os << e.where << ": " << colourise( e.kind ) << e.note << ": " << test << ": " << colourise( e.what() ) << std::endl;
-#else
-	os << colourise(e.kind) << e.note << ": " << test << ": " << colourise(e.what()) << std::endl;
-#endif
+	if (reporter)
+	{
+		reporter(e, test);
+	}
+	else
+	{
+		os << colourise(e.kind) << e.note << ": " << test << ": " << colourise(e.what()) << std::endl;
+	}
 }
 
 // Test runner:
@@ -930,12 +954,19 @@ struct options
 
 struct env
 {
+    report_callback reporter;
     std::ostream & os;
     bool pass;
     text testing;
 
-    env( std::ostream & os, bool pass )
-    : os( os ), pass( pass ), testing() {}
+    env(std::ostream & os, bool pass)
+    : os( os ), pass( pass ), testing()
+    {
+        reporter = [](const message&, const text&) {};
+    }
+
+    env(std::ostream & os, bool pass, report_callback reporter)
+    : reporter(reporter), os( os ), pass( pass ), testing() {}
 
     env & operator()( text test )
     {
@@ -1080,20 +1111,25 @@ struct confirm : action
     confirm( std::ostream & os, options option )
     : action( os ), output( os, option.pass ), option( option ) {}
 
+    confirm( report_callback reporter, std::ostream & os, options option )
+    : action( os ), output( os, option.pass, reporter ), option( option ) {}
+
     operator int() { return failures; }
 
     bool abort() { return option.abort && failures > 0; }
 
     confirm & operator()( test testing )
     {
+        output.reporter( before_test(), testing.name );
         try
         {
             ++selected; testing.behaviour( output( testing.name ) );
         }
         catch( message const & e )
         {
-            ++failures; report( os, e, testing.name );
+            ++failures; report( output.reporter, os, e, testing.name );
         }
+        output.reporter( after_test(), testing.name );
         return *this;
     }
 
@@ -1103,7 +1139,7 @@ struct confirm : action
         {
             os << failures << " out of " << selected << " selected " << pluralise("test", selected) << " " << colourise( "failed.\n" );
         }
-        else if ( option.pass )
+        else
         {
             os << "All " << selected << " selected " << pluralise("test", selected) << " " << colourise( "passed.\n" );
         }
@@ -1278,7 +1314,7 @@ inline int version( std::ostream & os )
     return 0;
 }
 
-inline int run( tests specification, texts arguments, std::ostream & os = std::cout )
+inline int run( tests specification, texts arguments, std::ostream & os = std::cout, report_callback reporter = report_callback() )
 {
     try
     {
@@ -1295,7 +1331,7 @@ inline int run( tests specification, texts arguments, std::ostream & os = std::c
         if ( option.tags    ) { return for_test( specification, in, ptags( os ) ); }
         if ( option.time    ) { return for_test( specification, in, times( os, option ) ); }
 
-        return for_test( specification, in, confirm( os, option ), option.repeat );
+        return for_test( specification, in, confirm( reporter, os, option ), option.repeat );
     }
     catch ( std::exception const & e )
     {
@@ -1304,27 +1340,27 @@ inline int run( tests specification, texts arguments, std::ostream & os = std::c
     }
 }
 
-inline int run( tests specification, int argc, char * argv[], std::ostream & os = std::cout )
+inline int run( tests specification, int argc, char * argv[], std::ostream & os = std::cout, report_callback reporter = report_callback() )
 {
-    return run( specification, texts( argv + 1, argv + argc ), os  );
+    return run( specification, texts( argv + 1, argv + argc ), os, reporter );
 }
 
 template <std::size_t N>
-int run( test const (&specification)[N], texts arguments, std::ostream & os = std::cout )
+int run( test const (&specification)[N], texts arguments, std::ostream & os = std::cout, report_callback reporter = report_callback() )
 {
-    return run( tests( specification, specification + N ), arguments, os  );
+    return run( tests( specification, specification + N ), arguments, os, reporter );
 }
 
 template <std::size_t N>
-int run( test const (&specification)[N], std::ostream & os = std::cout )
+int run( test const (&specification)[N], std::ostream & os = std::cout, report_callback reporter = report_callback() )
 {
-    return run( tests( specification, specification + N ), {}, os  );
+    return run( tests( specification, specification + N ), {}, os, reporter );
 }
 
 template <std::size_t N>
-int run( test const (&specification)[N], int argc, char * argv[], std::ostream & os = std::cout )
+int run( test const (&specification)[N], int argc, char * argv[], std::ostream & os = std::cout, report_callback reporter = report_callback() )
 {
-    return run( tests( specification, specification + N ), texts( argv + 1, argv + argc ), os  );
+    return run( tests( specification, specification + N ), texts( argv + 1, argv + argc ), os, reporter );
 }
 
 } // namespace lest

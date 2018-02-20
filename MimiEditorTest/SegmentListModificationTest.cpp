@@ -44,7 +44,7 @@ namespace
 		void Append()
 		{
 			TextSegment* s = Doc->SegmentTree.GetLastSegment();
-			assert(s->GetCurrentLength() == 0); //Avoid EXPECT in Append.
+			assert(s->GetCurrentLength() == 0);
 			int id = NextLineId++;
 			Lines.push_back(id);
 			Doc->Insert(Doc->GetTime(), { s, 0 }, MakeBuffer(id), true, 0, 0);
@@ -85,7 +85,7 @@ namespace
 			{
 				n -= 1;
 				s = s->GetNextSegment();
-				assert(s); //Avoid EXPECT in loop.
+				EXPECT(s);
 			}
 			EXPECT(n == 1);
 		}
@@ -99,15 +99,9 @@ namespace
 			int vectorIndex = 0;
 			while (r.GetPosition() < r.GetSize())
 			{
-				//Avoid EXPECT in loop.
-				assert(vectorIndex < Lines.size());
 				int id = Lines[vectorIndex++];
 				bool suc = r.Read(reinterpret_cast<mchar8_t*>(buffer), 6, &checkRead);
-				assert(suc);
-				assert(checkRead == 6);
-				assert(buffer[0] == id + 128);
-				assert(buffer[1] == '\r');
-				assert(buffer[2] == '\n');
+				EXPECT((vectorIndex <= Lines.size()) && suc && checkRead == 6 && buffer[0] == id + 128);
 			}
 			EXPECT(vectorIndex == Lines.size());
 		}
@@ -135,7 +129,7 @@ DEFINE_MODULE(TestSegmentListModification)
 	CASE("Append long")
 	{
 		LineModificationTester t(lest_env);
-		for (int i = 0; i < 20000; ++i)
+		for (int i = 0; i < 10000; ++i)
 		{
 			t.Append();
 		}

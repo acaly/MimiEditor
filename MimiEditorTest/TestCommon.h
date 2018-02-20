@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_set>
+#include <unordered_map>
 
 struct TestModule
 {
@@ -34,11 +35,43 @@ struct TestModule
 
 	int Run()
 	{
+		std::unordered_map<lest::text, int> counts;
+		auto reporter = [&counts](const lest::message& e, const lest::text& t)
+		{
+			if (e.kind == "before test")
+			{
+				std::cout << t << std::endl;
+			}
+			else if (e.kind == "after test")
+			{
+				std::size_t maxWidth = 10;
+				for (auto c : counts)
+				{
+					if (maxWidth < c.first.length()) maxWidth = c.first.length();
+				}
+				for (auto c : counts)
+				{
+					std::cout
+						<< "  "
+						<< std::left << std::setw(static_cast<std::streamsize>(maxWidth)) << c.first
+						<< c.second << std::endl;
+				}
+				counts.clear();
+			}
+			else
+			{
+				counts[e.kind] += 1;
+			}
+		};
+
 		std::cout << "----------------------------------------------\n";
 		std::cout << "Run test: " << Name << std::endl;
 		std::cout << "----------------------------------------------\n";
-		int ret = lest::run(Tests, { "-p" }, std::cout);
+
+		int ret = lest::run(Tests, { }, std::cout, reporter);
+
 		std::cout << "----------------------------------------------\n\n";
+
 		return ret;
 	}
 };
