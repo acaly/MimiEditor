@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include <unordered_set>
 
 struct TestModule
 {

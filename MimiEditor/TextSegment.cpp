@@ -18,7 +18,7 @@ Mimi::TextSegment::TextSegment(bool continuous, bool unfinished, ModifiedFlag mo
 {
 	Parent = nullptr;
 	Index = 0;
-	ContentBuffer.Clear();
+	ContentBuffer = StaticBuffer::CreateEmpty();
 	ActiveData = nullptr;
 }
 
@@ -196,8 +196,8 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 {
 	MakeActive();
 
-	assert(pos < ActiveData->ContentBuffer.GetLength());
-	assert(sel < ActiveData->ContentBuffer.GetLength() - pos);
+	assert(pos <= ActiveData->ContentBuffer.GetLength());
+	assert(sel <= ActiveData->ContentBuffer.GetLength() - pos);
 	assert(content == nullptr ||
 		content->GetLength() < MaxLength - (ActiveData->ContentBuffer.GetLength() - sel));
 
@@ -206,8 +206,11 @@ void Mimi::TextSegment::ReplaceText(std::size_t pos, std::size_t sel, DynamicBuf
 	//Content
 	ActiveData->ContentBuffer.Replace(pos, sel, content ? content->GetRawData() : nullptr, insertLen);
 	//Modification tracer
-	ActiveData->Modifications.Delete(pos, sel);
-	ActiveData->Modifications.Insert(pos, insertLen);
+	if (GetDocument()->GetSnapshotCount()) //TODO create a snapshot at the beginning?
+	{
+		ActiveData->Modifications.Delete(pos, sel);
+		ActiveData->Modifications.Insert(pos, insertLen);
+	}
 	//Labels
 	UpdateLabels(pos, sel, insertLen, globalPosition);
 	//Event
@@ -466,10 +469,11 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 	std::size_t i = FirstLabel();
 	std::size_t totalLen = GetCurrentLength();
 
-	//Special case: insert to temporary empty segment (see EnsureInsertionSize & TextDocument::Insert).
+	//Special case: insert to temporary empty segment, produced by:
+	//1. EnsureInsertionSize & TextDocument::Insert
+	//2. InsertLineBreak & TextDocument::Insert
 	if (totalLen == insertLen)
 	{
-		assert(IsContinuous());
 		assert(pos == 0 && sel == 0);
 		while (NextLabel(&i))
 		{
@@ -601,7 +605,7 @@ void Mimi::TextSegment::UpdateLabelsDeleteAll(TextSegment* moveBack, TextSegment
 
 void Mimi::TextSegment::MoveLabels(TextSegment* dest, std::size_t begin)
 {
-	assert(begin > 0 || dest == GetPreviousSegment()); //split or merge
+	assert((begin > 0 || GetCurrentLength() == 0) || dest == GetPreviousSegment()); //split or merge
 	//Calculate required space for referred labels.
 	std::size_t i = FirstLabel();
 	LabelData* firstRef = nullptr;

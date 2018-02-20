@@ -37,10 +37,10 @@ namespace Mimi
 			Value |= All;
 		}
 
-		bool SinceOpen() { return Value | Open; }
-		bool SinceSave() { return Value | Save; }
-		bool SinceSnapshot() { return Value | Snapshot; }
-		bool SinceRender() { return Value | Render; }
+		bool SinceOpen() { return Value & Open; }
+		bool SinceSave() { return Value & Save; }
+		bool SinceSnapshot() { return Value & Snapshot; }
+		bool SinceRender() { return Value & Render; }
 
 		void ClearSave() { Value &= ~Save; }
 		void ClearSnapshot() { Value &= ~Snapshot; }
@@ -65,8 +65,8 @@ namespace Mimi
 		std::uint8_t Value;
 
 	public:
-		bool IsContinuous() { return Value | Continuous; }
-		bool IsUnfinished() { return Value | Unfinished; }
+		bool IsContinuous() { return Value & Continuous; }
+		bool IsUnfinished() { return Value & Unfinished; }
 		void SetContinuous(bool val)
 		{
 			Value = (Value & ~Continuous) | (val << 0);
@@ -293,6 +293,10 @@ namespace Mimi
 			std::size_t len;
 			if (*index == FirstLabel())
 			{
+				if (Labels.GetCount() == 0)
+				{
+					return false;
+				}
 				*index = 0;
 			}
 			else

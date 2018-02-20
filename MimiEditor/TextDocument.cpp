@@ -224,6 +224,7 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 	else
 	{
 		//Multiple segment.
+		begin.Segment->MakeActive();
 		begin.Segment->MarkModified(time);
 		begin.Segment->ReplaceText(begin.Position,
 			begin.Segment->GetCurrentLength() - begin.Position, nullptr, g.Position);
@@ -253,6 +254,7 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 		}
 		if (end.Segment)
 		{
+			end.Segment->MakeActive();
 			end.Segment->MarkModified(time);
 			end.Segment->ReplaceText(0, end.Position, nullptr, g.Position);
 		}
@@ -288,12 +290,15 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 	assert(CheckInsertBuffer(TextEncoding, content, hasNewline));
 
 	//Don't insert after newline character.
-	assert(pos.Segment->IsUnfinished() || pos.Position < pos.Segment->GetCurrentLength());
+	assert(pos.Segment->IsUnfinished() || //Unfinished segment
+		(pos.Segment->GetCurrentLength() == 0 && pos.Segment->GetNextSegment() == nullptr) || //Last segment
+		pos.Position < pos.Segment->GetCurrentLength()); //Normal segment: must before newline
 
 	DocumentPositionD d = SegmentTree.ConvertPositionToD({ pos.Segment, 0 });
 
 	if (hasNewline)
 	{
+		pos.Segment->MakeActive();
 		pos.Segment->MarkModified(time);
 		DocumentPositionS nextPos = pos.Segment->InsertLineBreak(pos.Position);
 		DocumentPositionS newPos;
@@ -315,6 +320,7 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 	}
 	else
 	{
+		pos.Segment->MakeActive();
 		pos.Segment->MarkModified(time);
 		DocumentPositionS newPos1, newPos2;
 
@@ -323,6 +329,7 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 		pos.Segment->EnsureInsertionSize(pos.Position, content.GetLength(), &newPos1, &newPos2);
 		d.Position -= newPos1.Position;
 
+		newPos1.Segment->MarkModified(time);
 		newPos1.Segment->ReplaceText(newPos1.Position, 0, &content, d.Position);
 		if (begin)
 		{

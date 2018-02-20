@@ -1,0 +1,144 @@
+#include "TestCommon.h"
+#include "../MimiEditor/TextSegment.h"
+#include "../MimiEditor/TextDocument.h"
+#include "../MimiEditor/SnapshotReader.h"
+
+using namespace Mimi;
+
+namespace
+{
+	class LineModificationTester
+	{
+	public:
+		LineModificationTester(lest::env& lest_env)
+			: lest_env(lest_env),
+				Doc(TextDocument::CreateEmpty(CodePageManager::UTF16LE)),
+				LineBuffer(10)
+		{
+		}
+
+	private:
+		lest::env& lest_env;
+		TextDocument* const Doc;
+		std::vector<int> Lines;
+		int NextLineId = 0;
+		DynamicBuffer LineBuffer;
+
+	private:
+		void AppendChar(char16_t c)
+		{
+			LineBuffer.Append(reinterpret_cast<const uint8_t*>(&c), 2);
+		}
+
+		DynamicBuffer& MakeBuffer(int id)
+		{
+			LineBuffer.Clear();
+			assert(id + 128 < 0xD800);
+			AppendChar(static_cast<char16_t>(id + 128));
+			AppendChar('\r');
+			AppendChar('\n');
+			return LineBuffer;
+		}
+
+	public:
+		void Append()
+		{
+			TextSegment* s = Doc->SegmentTree.GetLastSegment();
+			assert(s->GetCurrentLength() == 0); //Avoid EXPECT in Append.
+			int id = NextLineId++;
+			Lines.push_back(id);
+			Doc->Insert(Doc->GetTime(), { s, 0 }, MakeBuffer(id), true, 0, 0);
+		}
+
+		void Insert(std::size_t pos)
+		{
+			DocumentPositionL l = { pos, 0 };
+			DocumentPositionS s = Doc->SegmentTree.ConvertPositionFromL(l);
+			int id = NextLineId++;
+			Lines.insert(Lines.begin() + pos, id);
+			Doc->Insert(Doc->GetTime(), { s.Segment, 0 }, MakeBuffer(id), true, 0, 0);
+		}
+
+		void Delete(std::size_t pos)
+		{
+			Lines.erase(Lines.begin() + pos);
+			DocumentPositionL l = { pos, 0 };
+			DocumentPositionS s = Doc->SegmentTree.ConvertPositionFromL(l);
+			std::size_t len = s.Segment->GetCurrentLength();
+			assert(len > 0);
+			Doc->DeleteRange(Doc->GetTime(), { s.Segment, 0 }, { s.Segment, len });
+		}
+
+	private:
+		void CheckConnectivity()
+		{
+			TextSegment* s = Doc->SegmentTree.GetFirstSegment();
+			TextSegment* last = Doc->SegmentTree.GetLastSegment();
+			EXPECT(s);
+			EXPECT(last);
+			std::size_t n = Doc->SegmentTree.GetLineCount();
+			std::size_t n2 = Doc->SegmentTree.GetElementCount();
+			EXPECT(n > 0);
+			EXPECT(n == n2);
+			EXPECT(s->GetPreviousSegment() == nullptr);
+			while (s != last)
+			{
+				n -= 1;
+				s = s->GetNextSegment();
+				assert(s); //Avoid EXPECT in loop.
+			}
+			EXPECT(n == 1);
+		}
+
+		void CheckData()
+		{
+			Snapshot* snapshot = Doc->CreateSnapshot();
+			SnapshotReader r(snapshot);
+			char16_t buffer[3];
+			std::size_t checkRead;
+			int vectorIndex = 0;
+			while (r.GetPosition() < r.GetSize())
+			{
+				//Avoid EXPECT in loop.
+				assert(vectorIndex < Lines.size());
+				int id = Lines[vectorIndex++];
+				bool suc = r.Read(reinterpret_cast<mchar8_t*>(buffer), 6, &checkRead);
+				assert(suc);
+				assert(checkRead == 6);
+				assert(buffer[0] == id + 128);
+				assert(buffer[1] == '\r');
+				assert(buffer[2] == '\n');
+			}
+			EXPECT(vectorIndex == Lines.size());
+		}
+
+	public:
+		void CheckList()
+		{
+			CheckConnectivity();
+			CheckData();
+		}
+	};
+}
+
+DEFINE_MODULE(TestSegmentListModification)
+{
+	CASE("Append short")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 200; ++i)
+		{
+			t.Append();
+		}
+		t.CheckList();
+	},
+	CASE("Append long")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 20000; ++i)
+		{
+			t.Append();
+		}
+		t.CheckList();
+	}
+};

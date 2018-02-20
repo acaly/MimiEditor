@@ -5,7 +5,8 @@ MODULE_LIST(AllTests,
 	TestEventHandler,
 	TestEncodingString,
 	TestEncodingDetection,
-	TestLineSeparation);
+	TestLineSeparation,
+	TestSegmentListModification);
 
 const char* ExecutableDirectory;
 
@@ -40,10 +41,21 @@ int main(int argc, char** argv)
 {
 	SetupExecutableDirectory(argc, argv);
 
+	//Args
+	std::unordered_set<std::string> args(argv + 1, argv + argc);
+
+	bool onlyTestLast = args.find("--Last") != args.end();
+	if (onlyTestLast)
+	{
+		AllTests.erase(AllTests.begin(), AllTests.end() - 1);
+	}
+
+	//Run tests
 	int ret = 0;
 	for (auto&& m : AllTests)
 	{
 		ret += m.Run();
 	}
+
 	return ret;
 }

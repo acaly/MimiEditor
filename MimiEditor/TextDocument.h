@@ -77,10 +77,16 @@ namespace Mimi
 
 	private:
 		std::size_t SnapshotCount = 0;
-		std::size_t SnapshotCapacity = 0;
+		std::size_t SnapshotCapacity = 2;
 		std::size_t NextSnapshotIndex = 0;
 		ShortVector<bool> SnapshotInUse;
 		std::uint16_t NextLabelHandlerIndex = 0;
+
+	public:
+		std::uint32_t GetTime()
+		{
+			return Timestamp.GetElapsedMinute<std::uint32_t>();
+		}
 
 	public:
 		//Snapshot manipulation.

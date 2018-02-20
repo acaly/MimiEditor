@@ -46,6 +46,19 @@ namespace Mimi
 		}
 
 	public:
+		static StaticBuffer CreateEmpty()
+		{
+			StaticBufferData* data = new StaticBufferData();
+			data->RefCount = 1;
+			data->Size = 0;
+			data->RawData[0] = 0;
+
+			StaticBuffer ret;
+			ret.Data = data;
+			return ret;
+		}
+
+	public:
 		StaticBuffer NewRef()
 		{
 			IncreaseRef();
