@@ -138,6 +138,12 @@ namespace Mimi
 			return String(Buffer.GetRawData(), Buffer.GetLength(), Encoding);
 		}
 
+		void CopyTo(DynamicBuffer& buffer)
+		{
+			buffer.Clear();
+			buffer.Append(Buffer.GetRawData(), Buffer.GetLength());
+		}
+
 		//TODO support format string
 	};
 }

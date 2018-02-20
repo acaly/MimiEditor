@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <cassert>
-#include "IFile.h"
+#include "File.h"
 #include "Buffer.h"
 
 namespace Mimi

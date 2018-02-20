@@ -190,7 +190,7 @@ namespace Mimi
 	private:
 		void MakeActive();
 		void MakeInactive();
-		void Split(std::size_t pos, bool newLine);
+		TextSegment* Split(std::size_t pos, bool newLine);
 		void Merge();
 
 	public:
@@ -209,8 +209,7 @@ namespace Mimi
 
 		DocumentPositionS InsertLineBreak(std::size_t pos)
 		{
-			Split(pos, true);
-			return { GetNextSegment(), 0 };
+			return { Split(pos, true), 0 };
 		}
 
 		void EnsureInsertionSize(std::size_t pos, std::size_t size,

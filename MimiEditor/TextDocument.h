@@ -73,13 +73,13 @@ namespace Mimi
 		//Content access.
 		TextSegmentTree SegmentTree;
 		CodePage TextEncoding;
+		Clock Timestamp;
 
 	private:
 		std::size_t SnapshotCount = 0;
 		std::size_t SnapshotCapacity = 0;
 		std::size_t NextSnapshotIndex = 0;
 		ShortVector<bool> SnapshotInUse;
-		Clock Timestamp;
 		std::uint16_t NextLabelHandlerIndex = 0;
 
 	public:
@@ -118,7 +118,7 @@ namespace Mimi
 			bool longData, bool referred);
 		DocumentLabelIndex AddRangeLabel(std::uint16_t handler, DocumentPositionS begin,
 			DocumentPositionS end, bool longData, bool referred);
-		void RemoveLabel(DocumentLabelIndex label);
+		void DeleteLabel(DocumentLabelIndex label);
 		//TODO move?
 
 	public:

@@ -36,7 +36,7 @@
     <ClInclude Include="TextDocument.h" />
     <ClInclude Include="EventHandler.h" />
     <ClInclude Include="FileTypeDetector.h" />
-    <ClInclude Include="IFile.h" />
+    <ClInclude Include="File.h" />
     <ClInclude Include="ModificationTracer.h" />
     <ClInclude Include="ShortVector.h" />
     <ClInclude Include="String.h" />

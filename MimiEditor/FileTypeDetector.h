@@ -4,7 +4,7 @@
 #include <memory>
 #include <cassert>
 #include "CodePage.h"
-#include "IFile.h"
+#include "File.h"
 #include "Buffer.h"
 #include "BinaryReader.h"
 
@@ -42,7 +42,7 @@ namespace Mimi
 
 	class FileTypeDetector final
 	{
-		static const std::size_t MaxLineLength = 256;
+		static const std::size_t MaxLineLength = 256; //TODO make it larger in release version
 
 	public:
 		FileTypeDetector(std::unique_ptr<IFileReader> reader, FileTypeDetectionOptions options);

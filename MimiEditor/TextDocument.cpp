@@ -172,7 +172,7 @@ Mimi::DocumentLabelIndex Mimi::TextDocument::AddRangeLabel(std::uint16_t handler
 	return { retSegment, retId };
 }
 
-void Mimi::TextDocument::RemoveLabel(DocumentLabelIndex label)
+void Mimi::TextDocument::DeleteLabel(DocumentLabelIndex label)
 {
 	TextSegment* s = label.Segment;
 	std::size_t index = label.Index;
@@ -182,12 +182,12 @@ void Mimi::TextDocument::RemoveLabel(DocumentLabelIndex label)
 	if (d->Type & LabelType::Referred)
 	{
 		DocumentPositionD d = SegmentTree.ConvertPositionToD({ s, 0 });
-		s->NotifyLabelRemoved(label.Index, d);
+		s->NotifyLabelRemoved(label.Index, d.Position);
 	}
 
 	while (d->Type & LabelType::Unfinished)
 	{
-		assert(d->Type & LabelType::Range);
+		assert((d->Type & LabelType::Topology) == LabelType::Range);
 		TextSegment* nextSegment = s->GetNextSegment();
 		assert(nextSegment);
 		std::size_t nextIndex = d[1].Next;

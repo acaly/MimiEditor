@@ -106,27 +106,27 @@ void Mimi::TextSegment::MakeInactive()
 	ActiveData = nullptr;
 }
 
-void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
+Mimi::TextSegment* Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 {
 	MakeActive();
 
-	if (newLine && pos == 0)
+	if (newLine && pos == GetCurrentLength() && IsUnfinished())
 	{
 		//Note that we don't update data here, as it will be done after spliting.
-		assert(IsContinuous());
-		assert(GetPreviousSegment() && GetPreviousSegment()->IsUnfinished());
-		Continuous.SetContinuous(false);
-		GetPreviousSegment()->Continuous.SetUnfinished(false);
-		return;
-	}
-	if (newLine && pos == GetCurrentLength())
-	{
-		//Note that we don't update data here, as it will be done after spliting.
-		assert(IsUnfinished());
-		assert(GetNextSegment() && GetNextSegment()->IsContinuous());
+		TextSegment* next = GetNextSegment();
+		assert(next && next->IsContinuous());
 		Continuous.SetUnfinished(false);
-		GetNextSegment()->Continuous.SetContinuous(false);
-		return;
+		next->Continuous.SetContinuous(false);
+		return next;
+	}
+	if (newLine && pos == 0 && IsContinuous())
+	{
+		//Note that we don't update data here, as it will be done after spliting.
+		TextSegment* prev = GetPreviousSegment();
+		assert(prev && prev->IsUnfinished());
+		Continuous.SetContinuous(false);
+		prev->Continuous.SetUnfinished(false);
+		return prev;
 	}
 
 	//Make the new segment
@@ -147,6 +147,8 @@ void Mimi::TextSegment::Split(std::size_t pos, bool newLine)
 
 	//Add to list
 	Parent->InsertElement(Index + 1, newSegment);
+
+	return newSegment;
 }
 
 void Mimi::TextSegment::Merge()
@@ -238,22 +240,20 @@ void Mimi::TextSegment::EnsureInsertionSize(std::size_t pos, std::size_t size,
 	}
 	else if (pos + size < MaxLength)
 	{
-		Split(pos, false); //This will not produce empty segment.
+		TextSegment* next = Split(pos, false); //This will not produce empty segment.
 		if (before)
 		{
 			*before = { this, pos };
 		}
 		if (after)
 		{
-			*after = { GetNextSegment(), 0 };
+			*after = { next, 0 };
 		}
 	}
 	else
 	{
-		Split(pos, false); //This will not produce empty segment.
-		TextSegment* next2 = GetNextSegment();
-		Split(pos, false); //A temporary empty segment.
-		TextSegment* next = GetNextSegment();
+		TextSegment* next2 = Split(pos, false); //This will not produce empty segment.
+		TextSegment* next = Split(pos, false); //A temporary empty segment.
 		if (before)
 		{
 			*before = { next, 0 };
