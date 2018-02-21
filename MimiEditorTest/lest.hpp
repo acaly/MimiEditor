@@ -305,10 +305,10 @@ struct result
 
 struct location
 {
-    const text file;
+    const char* file;
     const int line;
 
-    location( text file, int line )
+    location( const char* file, int line )
     : file( file ), line( line ) {}
 };
 
@@ -322,13 +322,13 @@ struct comment
 
 struct message : std::runtime_error
 {
-    const text kind;
+    const char* kind;
     const location where;
     const comment note;
 
     ~message() throw() {}   // GCC 4.6
 
-    message( text kind, location where, text expr, text note = "" )
+    message( const char* kind, location where, text expr, text note = "" )
     : std::runtime_error( expr ), kind( kind ), where( where ), note( note ) {}
 };
 
@@ -342,7 +342,7 @@ struct success : message
 {
 //    using message::message;   // VC is lagging here
 
-    success( text kind, location where, text expr, text note = "" )
+    success( const char* kind, location where, text expr, text note = "" )
     : message( kind, where, expr, note ) {}
 };
 
@@ -364,7 +364,7 @@ struct got : success
     : success( "passed: got exception", where, expr ) {}
 
     got( location where, text expr, text excpt )
-    : success( "passed: got exception " + excpt, where, expr ) {}
+    : success( "passed: got exception", where, expr, excpt ) {}
 };
 
 struct expected : message
@@ -388,7 +388,7 @@ struct before_test : message
 struct after_test : message
 {
     after_test()
-    : message{ "after test",{ "", 0 }, "", "" } {}
+    : message{ "after test", { "", 0 }, "", "" } {}
 };
 
 struct guard
@@ -846,10 +846,11 @@ inline std::ostream & operator<<( std::ostream & os, comment note )
 
 inline std::ostream & operator<<( std::ostream & os, location where )
 {
-	return os << where.file.substr(where.file.find_last_of("/\\") + 1) << ":" << where.line;
+	text where_file = where.file;
+	return os << where_file.substr(where_file.find_last_of("/\\") + 1) << ":" << where.line;
 }
 
-inline void report( report_callback reporter, std::ostream & os, message const & e, text test )
+inline void report( report_callback& reporter, std::ostream & os, message const & e, text& test )
 {
 	if (reporter)
 	{
