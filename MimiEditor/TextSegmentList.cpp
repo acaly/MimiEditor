@@ -366,5 +366,6 @@ Mimi::TextSegment* Mimi::TextSegmentList::RemoveElement(std::size_t pos)
 	TextSegment* ret = DataAsElement()[pos];
 	RemovePointer(pos);
 	CheckMerge();
+	UpdateChildrenIndex(pos);
 	return ret;
 }

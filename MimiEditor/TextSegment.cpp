@@ -18,7 +18,7 @@ Mimi::TextSegment::TextSegment(bool continuous, bool unfinished, ModifiedFlag mo
 {
 	Parent = nullptr;
 	Index = 0;
-	ContentBuffer = StaticBuffer::CreateEmpty();
+	ContentBuffer.Clear();
 	ActiveData = nullptr;
 }
 
@@ -470,9 +470,9 @@ void Mimi::TextSegment::UpdateLabels(std::size_t pos, std::size_t sel, std::size
 	//Special case: insert to temporary empty segment, produced by:
 	//1. EnsureInsertionSize & TextDocument::Insert
 	//2. InsertLineBreak & TextDocument::Insert
-	if (totalLen == insertLen)
+	if (sel == 0 && totalLen == insertLen)
 	{
-		assert(pos == 0 && sel == 0);
+		assert(pos == 0);
 		while (NextLabel(&i))
 		{
 			LabelData* label = ReadLabelData(i);

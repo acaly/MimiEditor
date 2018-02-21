@@ -212,8 +212,34 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 	assert(static_cast<TextDocument*>(end.Segment->GetDocument()) == this);
 	assert(begin.Segment == end.Segment ||
 		TextSegment::ComparePosition(begin.Segment, end.Segment) < 0);
+	assert(begin.Position <= begin.Segment->GetCurrentLength());
+	assert(end.Position <= end.Segment->GetCurrentLength());
+	assert(begin.Segment != end.Segment || begin.Position <= end.Position);
+
+	if (begin.Segment == end.Segment && begin.Position == end.Position)
+	{
+		//Do nothing.
+		return begin;
+	}
 
 	DocumentPositionD g = SegmentTree.ConvertPositionToD({ begin.Segment, 0 });
+
+	//Check whether we should start from next segment of begin.
+	if (begin.Position == begin.Segment->GetCurrentLength())
+	{
+		begin.Segment = begin.Segment->GetNextSegment();
+		begin.Position = 0;
+		assert(begin.Segment); //TODO handle delete from the beginning of document.
+	}
+
+	//Check whether we should also delete the segment of end.
+	if (end.Position == end.Segment->GetCurrentLength())
+	{
+		end.Segment = end.Segment->GetNextSegment();
+		end.Position = 0;
+		assert(begin.Segment != end.Segment);
+		//end.Segment can be nullptr here.
+	}
 
 	if (begin.Segment == end.Segment)
 	{
@@ -225,33 +251,58 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 	else
 	{
 		//Multiple segment.
-		begin.Segment->MakeActive();
-		begin.Segment->MarkModified(time);
-		begin.Segment->ReplaceText(begin.Position,
-			begin.Segment->GetCurrentLength() - begin.Position, nullptr, g.Position);
 
-		g.Position += begin.Segment->GetCurrentLength();
-		TextSegment* s = begin.Segment->GetNextSegment();
+		//First we need to process the begin segment, which, after deleting, has some
+		//data before the start position.
 
-		//Check whether we should also delete the segment of end.
-		if (end.Position == end.Segment->GetCurrentLength())
+		TextSegment* s;
+		DocumentPositionS prev;
+		TextSegment* checkNewline = nullptr;
+
+		if (begin.Position == 0)
 		{
-			end.Segment = end.Segment->GetNextSegment();
-			end.Position = 0;
+			//Skip begin.Segment if all of its content is removed, because ReplaceText
+			//cannot handle this situation.
+			s = begin.Segment;
+			//Set prev (return value) as the end of the previous segment.
+			prev.Segment = s->GetPreviousSegment();
+			assert(prev.Segment);
+			prev.Position = prev.Segment->GetCurrentLength();
+		}
+		else
+		{
+			begin.Segment->MakeActive();
+			begin.Segment->MarkModified(time);
+			begin.Segment->ReplaceText(begin.Position,
+				begin.Segment->GetCurrentLength() - begin.Position, nullptr, g.Position);
+
+			g.Position += begin.Segment->GetCurrentLength();
+			s = begin.Segment->GetNextSegment();
+
+			//Set prev (return value) as begin.
+			prev = begin;
+			checkNewline = begin.Segment;
 		}
 
 		while (s != end.Segment)
 		{
-			TextSegment* removed = s->GetParent()->RemoveElement(s->GetIndexInList());
-			assert(removed == s);
+			std::size_t len = s->GetCurrentLength();
+			TextSegment* next = s->GetNextSegment();
 
-			removed->UpdateLabelsDeleteAll(begin.Segment, end.Segment, g.Position);
+			//Remove labels.
+			s->UpdateLabelsDeleteAll(prev.Segment, end.Segment, g.Position);
 
-			g.Position += removed->GetCurrentLength();
-			s = removed->GetNextSegment();
+			//Remove from list.
+			TextSegment* checkRemoved = s->GetParent()->RemoveElement(s->GetIndexInList());
+			assert(checkRemoved == s);
+
+			//Release memory.
+			delete s;
+
+			g.Position += len;
+			s = next;
 			
 			assert(!end.Segment || s);
-			delete removed;
 		}
 		if (end.Segment)
 		{
@@ -259,8 +310,11 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 			end.Segment->MarkModified(time);
 			end.Segment->ReplaceText(0, end.Position, nullptr, g.Position);
 		}
-		begin.Segment->CheckLineBreak(); //This will also update end.Continuous.
-		return begin;
+		if (checkNewline)
+		{
+			checkNewline->CheckLineBreak(); //This will also update end.Continuous if necessary.
+		}
+		return prev;
 	}
 }
 
@@ -346,6 +400,8 @@ void Mimi::TextDocument::Insert(std::uint32_t time, DocumentPositionS pos, Dynam
 Mimi::TextDocument * Mimi::TextDocument::CreateEmpty(CodePage cp)
 {
 	TextSegment* s = new TextSegment(false, false, ModifiedFlag::NotModified);
+	s->ContentBuffer = StaticBuffer::CreateEmpty();
+
 	TextDocument* doc = new TextDocument(s);
 	doc->TextEncoding = cp;
 	return doc;

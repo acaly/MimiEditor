@@ -116,7 +116,7 @@ namespace
 		void CheckList()
 		{
 			CheckConnectivity();
-			//CheckData();
+			CheckData();
 		}
 	};
 }
@@ -170,6 +170,47 @@ DEFINE_MODULE(TestSegmentListModification)
 		{
 			pos = (pos + 23456789) % (200 + i);
 			t.Insert(pos);
+		}
+		t.CheckList();
+	},
+	CASE("Delete forward")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 10200; ++i)
+		{
+			t.Append();
+		}
+		for (int i = 0; i < 10000; ++i)
+		{
+			t.Delete(100);
+		}
+		t.CheckList();
+	},
+	CASE("Delete backward")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 10200; ++i)
+		{
+			t.Append();
+		}
+		for (int i = 0; i < 10000; ++i)
+		{
+			t.Delete(10000 - i + 100);
+		}
+		t.CheckList();
+	},
+	CASE("Delete randomly") //TODO not finished
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 10200; ++i)
+		{
+			t.Append();
+		}
+		int pos = 0;
+		for (int i = 0; i < 10000; ++i)
+		{
+			pos = (pos + 23456789) % (10200 - i);
+			t.Delete(pos);
 		}
 		t.CheckList();
 	},
