@@ -28,8 +28,8 @@ Mimi::Snapshot* Mimi::TextDocument::CreateSnapshot()
 	do
 	{
 		StaticBuffer buffer = segment->MakeSnapshot(resize);
-		s->AppendBuffer(buffer);
 		s->DataLength += buffer.GetSize();
+		s->AppendBuffer(buffer.MoveRef());
 		segment = segment->GetNextSegment();
 	} while (segment);
 
@@ -58,6 +58,7 @@ void Mimi::TextDocument::DisposeSnapshot(Snapshot* s)
 	do
 	{
 		segment->DisposeSnapshot(lastUsed + 1, resize);
+		segment = segment->GetNextSegment();
 	} while (segment);
 
 	s->ClearBuffer();

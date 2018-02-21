@@ -55,6 +55,7 @@
     <ClCompile Include="FileTypeDetector.cpp" />
     <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
+    <ClCompile Include="Snapshot.cpp" />
     <ClCompile Include="SnapshotPositionConverter.cpp" />
     <ClCompile Include="SnapshotReader.cpp" />
     <ClCompile Include="TextDocument.cpp" />

@@ -283,6 +283,7 @@ void Mimi::ModificationTracer::DisposeSnapshot(std::size_t oldNum, std::size_t n
 void Mimi::ModificationTracer::Resize(std::size_t size)
 {
 	Snapshot* s = this->SnapshotHead;
+	Snapshot* last = nullptr;
 	for (std::size_t i = 0; i < size; ++i)
 	{
 		if (s == nullptr)
@@ -293,7 +294,12 @@ void Mimi::ModificationTracer::Resize(std::size_t size)
 			{
 				this->SnapshotHead = s;
 			}
+			else
+			{
+				last->Next = s;
+			}
 		}
+		last = s;
 		s = s->Next;
 	}
 	while (s)

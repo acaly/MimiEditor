@@ -84,7 +84,7 @@ namespace Mimi
 			: ContentBuffer(content)
 		{
 			LastModifiedTime = 0;
-			SnapshotCache = content.NewRef();
+			SnapshotCache = content.MoveRef();
 		}
 
 		ActiveTextSegmentData()
@@ -96,7 +96,7 @@ namespace Mimi
 
 		~ActiveTextSegmentData()
 		{
-			SnapshotCache.ClearRef();
+			SnapshotCache.TryClearRef();
 		}
 
 	public:

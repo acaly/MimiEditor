@@ -28,10 +28,7 @@ namespace Mimi
 		Snapshot(Snapshot&&) = delete;
 		Snapshot& operator= (const Snapshot&) = delete;
 
-		~Snapshot()
-		{
-			assert(BufferList.size() == 0);
-		}
+		~Snapshot();
 
 	private:
 		TextDocument* Document;
@@ -42,7 +39,7 @@ namespace Mimi
 	private:
 		void AppendBuffer(StaticBuffer buffer)
 		{
-			BufferList.push_back(buffer.NewRef());
+			BufferList.push_back(buffer.MoveRef());
 		}
 
 		void ClearBuffer()

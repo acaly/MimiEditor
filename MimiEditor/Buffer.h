@@ -65,6 +65,13 @@ namespace Mimi
 			return *this;
 		}
 
+		StaticBuffer MoveRef()
+		{
+			StaticBuffer ret = *this;
+			Clear();
+			return ret;
+		}
+
 		void ClearRef()
 		{
 			assert(Data);

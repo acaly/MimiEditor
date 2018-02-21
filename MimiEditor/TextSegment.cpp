@@ -26,7 +26,6 @@ Mimi::TextSegment::~TextSegment()
 {
 	if (ActiveData)
 	{
-		ActiveData->SnapshotCache.TryClearRef();
 		delete ActiveData;
 	}
 	ContentBuffer.TryClearRef();
@@ -85,8 +84,7 @@ void Mimi::TextSegment::MakeActive()
 	if (IsActive()) return;
 
 	std::size_t length = ContentBuffer.GetSize();
-	ActiveData = new ActiveTextSegmentData(ContentBuffer);
-	ContentBuffer.ClearRef();
+	ActiveData = new ActiveTextSegmentData(ContentBuffer.MoveRef());
 
 	//Setup modification tracer
 	ActiveData->Modifications.Resize(GetDocument()->GetSnapshotCapacity());
