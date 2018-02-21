@@ -38,11 +38,11 @@ struct TestModule
 		std::unordered_map<lest::text, int> counts;
 		auto reporter = [&counts](const lest::message& e, const lest::text& t)
 		{
-			if (e.kind == "before test")
+			if (std::strcmp(e.kind, "before test") == 0)
 			{
 				std::cout << t << std::endl;
 			}
-			else if (e.kind == "after test")
+			else if (std::strcmp(e.kind, "after test") == 0)
 			{
 				std::size_t maxWidth = 10;
 				for (auto c : counts)
