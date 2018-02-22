@@ -153,6 +153,11 @@ void Mimi::TextSegmentTree::InsertAfter(TextSegment* pos, TextSegment* newSegmen
 	pos->GetParent()->InsertElement(pos->GetIndexInList() + 1, newSegment);
 }
 
+void Mimi::TextSegmentTree::CheckChildrenIndexAndCount()
+{
+	Root->CheckChildrenIndexAndCount();
+}
+
 Mimi::TextSegmentList::~TextSegmentList()
 {
 	for (std::size_t i = 0; i < ChildrenCount; ++i)
@@ -221,7 +226,6 @@ void Mimi::TextSegmentList::Merge()
 	ParentNode->RemovePointer(next->Index);
 	ParentNode->UpdateChildrenIndex(Index + 1);
 	UpdateChildrenIndex(oldChildrenCount);
-	UpdateLocalCount();
 	delete next;
 	ParentNode->CheckMerge();
 }
@@ -262,7 +266,7 @@ void Mimi::TextSegmentList::CheckSplit(std::size_t index, void* newPtr)
 	}
 }
 
-void Mimi::TextSegmentList::CheckMerge()
+bool Mimi::TextSegmentList::CheckMerge()
 {
 	//Check threshold = 2/3 capacity
 	if (ChildrenCount < TextSegmentTreeFactor / 3 * 2 && ParentNode)
@@ -282,22 +286,26 @@ void Mimi::TextSegmentList::CheckMerge()
 			assert(last);
 			if (last->ChildrenCount < TextSegmentTreeFactor - ChildrenCount)
 			{
-				last->Merge();
+				last->Merge(); //Delete this.
+				last->UpdateLocalCount();
+				return false;
 			}
 		}
 		else
 		{
 			//The only child.
-			//We need (and only need) to ensure there's no nodes except root.
+			//We need (and only need) to ensure there's no empty nodes.
 			if (ChildrenCount == 0)
 			{
 				//Save it to stack as this is going to be deleted.
 				TextSegmentList* p = ParentNode;
-				p->RemovePointer(Index);
+				p->RemovePointer(Index); //Delete this.
 				p->CheckMerge();
+				return false;
 			}
 		}
 	}
+	return true;
 }
 
 void Mimi::TextSegmentList::UpdateLocalCount()
@@ -365,7 +373,57 @@ Mimi::TextSegment* Mimi::TextSegmentList::RemoveElement(std::size_t pos)
 
 	TextSegment* ret = DataAsElement()[pos];
 	RemovePointer(pos);
-	CheckMerge();
-	UpdateChildrenIndex(pos);
+	if (CheckMerge())
+	{
+		UpdateChildrenIndex(pos);
+		UpdateCount();
+	}
 	return ret;
+}
+
+void Mimi::TextSegmentList::CheckChildrenIndexAndCount()
+{
+	if (IsLeaf)
+	{
+		std::size_t elements = 0, lines = 0, data = 0;
+		for (std::size_t i = 0; i < TextSegmentTreeFactor; ++i)
+		{
+			if (i < ChildrenCount)
+			{
+				TextSegment* s = DataAsElement()[i];
+				elements += 1;
+				lines += s->IsContinuous() ? 0 : 1;
+				data += s->GetCurrentLength();
+			}
+			else
+			{
+				assert(DataAsElement()[i] == nullptr);
+			}
+		}
+		assert(elements == ElementCount);
+		assert(lines == LineCount);
+		assert(data == DataLength);
+	}
+	else
+	{
+		std::size_t elements = 0, lines = 0, data = 0;
+		for (std::size_t i = 0; i < TextSegmentTreeFactor; ++i)
+		{
+			if (i < ChildrenCount)
+			{
+				TextSegmentList* n = DataAsNode()[i];
+				n->CheckChildrenIndexAndCount();
+				elements += n->ElementCount;
+				lines += n->LineCount;
+				data += n->DataLength;
+			}
+			else
+			{
+				assert(DataAsNode()[i] == nullptr);
+			}
+		}
+		assert(elements == ElementCount);
+		assert(lines == LineCount);
+		assert(data == DataLength);
+	}
 }

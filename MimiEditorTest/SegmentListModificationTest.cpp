@@ -54,6 +54,7 @@ namespace
 			int id = NextLineId++;
 			Lines.push_back(id);
 			Doc->Insert(Doc->GetTime(), { s, 0 }, MakeBuffer(id), true, 0, 0);
+			Doc->SegmentTree.CheckChildrenIndexAndCount();
 		}
 
 		void Insert(std::size_t pos)
@@ -63,6 +64,7 @@ namespace
 			int id = NextLineId++;
 			Lines.insert(Lines.begin() + pos, id);
 			Doc->Insert(Doc->GetTime(), { s.Segment, 0 }, MakeBuffer(id), true, 0, 0);
+			Doc->SegmentTree.CheckChildrenIndexAndCount();
 		}
 
 		void Delete(std::size_t pos)
@@ -73,6 +75,7 @@ namespace
 			std::size_t len = s.Segment->GetCurrentLength();
 			assert(len > 0);
 			Doc->DeleteRange(Doc->GetTime(), { s.Segment, 0 }, { s.Segment, len });
+			Doc->SegmentTree.CheckChildrenIndexAndCount();
 		}
 
 	private:
@@ -199,7 +202,7 @@ DEFINE_MODULE(TestSegmentListModification)
 		}
 		t.CheckList();
 	},
-	CASE("Delete randomly") //TODO not finished
+	CASE("Delete randomly")
 	{
 		LineModificationTester t(lest_env);
 		for (int i = 0; i < 10200; ++i)
@@ -214,4 +217,7 @@ DEFINE_MODULE(TestSegmentListModification)
 		}
 		t.CheckList();
 	},
+	//TODO
+	//Insert to beginning
+	//Delete from beginning, from end and delete all.
 };

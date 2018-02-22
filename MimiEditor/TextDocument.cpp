@@ -229,7 +229,7 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 	{
 		begin.Segment = begin.Segment->GetNextSegment();
 		begin.Position = 0;
-		assert(begin.Segment); //TODO handle delete from the beginning of document.
+		assert(begin.Segment);
 	}
 
 	//Check whether we should also delete the segment of end.
@@ -266,8 +266,11 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 			s = begin.Segment;
 			//Set prev (return value) as the end of the previous segment.
 			prev.Segment = s->GetPreviousSegment();
-			assert(prev.Segment);
-			prev.Position = prev.Segment->GetCurrentLength();
+			//prev.Segment can be null, when deleting from the beginning.
+			if (prev.Segment)
+			{
+				prev.Position = prev.Segment->GetCurrentLength();
+			}
 		}
 		else
 		{
@@ -313,6 +316,11 @@ Mimi::DocumentPositionS Mimi::TextDocument::DeleteRange(std::uint32_t time,
 		if (checkNewline)
 		{
 			checkNewline->CheckLineBreak(); //This will also update end.Continuous if necessary.
+		}
+		if (prev.Segment == nullptr)
+		{
+			//Return the beginning position.
+			return { SegmentTree.GetFirstSegment(), 0 };
 		}
 		return prev;
 	}

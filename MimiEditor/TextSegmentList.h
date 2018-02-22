@@ -58,6 +58,9 @@ namespace Mimi
 		{
 			InsertAfter(GetLastSegment(), newSegment);
 		}
+
+	public:
+		void CheckChildrenIndexAndCount();
 	};
 
 	class TextSegmentList final
@@ -255,7 +258,7 @@ namespace Mimi
 		TextSegmentList* Split(std::size_t pos);
 		void Merge();
 		void CheckSplit(std::size_t index, void* newPtr);
-		void CheckMerge();
+		bool CheckMerge(); //Return false if this has been deleted, true otherwise.
 
 		void UpdateLocalCount();
 		void UpdateCount()
@@ -278,6 +281,10 @@ namespace Mimi
 			assert(IsLeaf);
 			UpdateCount();
 		}
+
+	private:
+		//For debug use only.
+		void CheckChildrenIndexAndCount();
 	};
 }
 
