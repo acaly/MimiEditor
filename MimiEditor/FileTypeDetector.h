@@ -19,12 +19,12 @@ namespace Mimi
 
 	struct FileTypeDetectionOptions
 	{
-		std::size_t MaxRead;
-		std::size_t MinRead;
+		std::size_t MaxRead = 1000;
+		std::size_t MinRead = 100;
 		std::vector<CodePage> PrimaryCodePages; //Checked before utf8 & utf16
 		std::vector<CodePage> AdditionalCodePages; //Checked after utf8 & utf16
 		std::vector<char32_t> InvalidUnicode;
-		InvalidCharAction InvalidCharAction;
+		InvalidCharAction InvalidCharAction = InvalidCharAction::Cancel;
 	};
 
 	enum class TextFileEncoding

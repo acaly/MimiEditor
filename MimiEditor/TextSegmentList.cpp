@@ -153,6 +153,17 @@ void Mimi::TextSegmentTree::InsertAfter(TextSegment* pos, TextSegment* newSegmen
 	pos->GetParent()->InsertElement(pos->GetIndexInList() + 1, newSegment);
 }
 
+void Mimi::TextSegmentTree::FastAppend(TextSegment * newSegment)
+{
+	TextSegment* pos = GetLastSegment();
+	pos->GetParent()->FastInsertElement(pos->GetIndexInList() + 1, newSegment);
+}
+
+void Mimi::TextSegmentTree::UpdataAllCount()
+{
+	Root->RecursiveUpdateCount();
+}
+
 void Mimi::TextSegmentTree::CheckChildrenIndexAndCount()
 {
 	Root->CheckChildrenIndexAndCount();
@@ -358,11 +369,50 @@ void Mimi::TextSegmentList::UpdateChildrenIndex(std::size_t p)
 	}
 }
 
+void Mimi::TextSegmentList::RecursiveUpdateCount()
+{
+	if (IsLeaf)
+	{
+		std::size_t elements = 0, lines = 0, data = 0;
+		for (std::size_t i = 0; i < ChildrenCount; ++i)
+		{
+			TextSegment* s = DataAsElement()[i];
+			elements += 1;
+			lines += s->IsContinuous() ? 0 : 1;
+			data += s->GetCurrentLength();
+		}
+		ElementCount = static_cast<std::uint32_t>(elements);
+		LineCount = static_cast<std::uint32_t>(lines);
+		DataLength = static_cast<std::uint32_t>(data);
+	}
+	else
+	{
+		std::size_t elements = 0, lines = 0, data = 0;
+		for (std::size_t i = 0; i < ChildrenCount; ++i)
+		{
+			TextSegmentList* n = DataAsNode()[i];
+			n->RecursiveUpdateCount();
+			elements += n->ElementCount;
+			lines += n->LineCount;
+			data += n->DataLength;
+		}
+		ElementCount = static_cast<std::uint32_t>(elements);
+		LineCount = static_cast<std::uint32_t>(lines);
+		DataLength = static_cast<std::uint32_t>(data);
+	}
+}
+
 void Mimi::TextSegmentList::InsertElement(std::size_t pos, TextSegment* element)
 {
 	assert(IsLeaf);
 	CheckSplit(pos, element);
 	UpdateCount();
+}
+
+void Mimi::TextSegmentList::FastInsertElement(std::size_t pos, TextSegment * element)
+{
+	assert(IsLeaf);
+	CheckSplit(pos, element);
 }
 
 Mimi::TextSegment* Mimi::TextSegmentList::RemoveElement(std::size_t pos)

@@ -427,10 +427,11 @@ Mimi::TextDocument* Mimi::TextDocument::CreateFromTextFile(FileTypeDetector* fil
 
 	while (file->ReadNextLine())
 	{
-		doc->SegmentTree.Append(new TextSegment(file->CurrentLineData,
+		doc->SegmentTree.FastAppend(new TextSegment(file->CurrentLineData,
 			file->IsCurrentLineUnfinished(),
 			file->IsCurrentLineContinuous(), ModifiedFlag::NotModified));
 	}
+	doc->SegmentTree.UpdataAllCount();
 
 	return doc;
 }

@@ -54,7 +54,7 @@ namespace Mimi
 			std::size_t append = BufferSize - (Buffer.GetLength() - BufferPosition);
 			Buffer.Delete(0, BufferPosition);
 			BufferPosition = 0;
-			std::uint8_t* space = Buffer.Append(append);
+			std::uint8_t* space = Buffer.Append(append); //Implementation ensures FastPeek4 always has space.
 			std::size_t r;
 			Input->Read(space, append, &r);
 			InputFinished = r < append;
@@ -125,6 +125,16 @@ namespace Mimi
 			}
 			std::memcpy(buffer, &Buffer.GetRawData()[BufferPosition], size);
 			return true;
+		}
+
+		void FastPeek4(void* buffer)
+		{
+			if (BufferCount() < 4)
+			{
+				Fill();
+			}
+			void* src = &Buffer.GetPointer()[BufferPosition];
+			*reinterpret_cast<std::uint32_t*>(buffer) = *reinterpret_cast<std::uint32_t*>(src);
 		}
 
 		template <typename T>

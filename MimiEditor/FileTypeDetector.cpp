@@ -165,7 +165,7 @@ namespace
 }
 
 Mimi::FileTypeDetector::FileTypeDetector(std::unique_ptr<IFileReader> reader, FileTypeDetectionOptions options)
-	: Reader(std::move(reader)), CurrentLineData(0)
+	: Reader(std::move(reader)), CurrentLineData(MaxLineLength + 4)
 {
 	Options = options;
 	Error = false;
@@ -190,7 +190,7 @@ bool Mimi::FileTypeDetector::ReadNextLine()
 	while (remain = Reader.GetRemaining())
 	{
 		mchar8_t buffer[4] = {}; //Ensure empty
-		Reader.Peek(buffer, remain > 4 ? 4 : remain);
+		Reader.FastPeek4(buffer);
 		char32_t unicode;
 		std::uint8_t r = TextCodePage.CharToUTF32(buffer, &unicode);
 		if (r == 0 || r > remain)
@@ -210,7 +210,7 @@ bool Mimi::FileTypeDetector::ReadNextLine()
 				continue; //Continue while loop
 			}
 		}
-		CurrentLineData.Append(buffer, r);
+		CurrentLineData.FastAppend(buffer, r);
 		Reader.SkipPeeked(r);
 		//Line break: only check for '\n'
 		if (unicode == '\n')

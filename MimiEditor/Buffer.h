@@ -248,7 +248,7 @@ namespace Mimi
 				IsExternalBuffer = false;
 				ExternalBuffer.ClearRef();
 			}
-			else if (Capacity < newSize)
+			else if (Capacity < newSize + 4) //Give 4 bytes more.
 			{
 				std::uint16_t capacity = Capacity + Capacity / 2;
 				if (capacity < newSize) capacity = static_cast<std::uint16_t>(newSize);
@@ -315,6 +315,17 @@ namespace Mimi
 			Length -= static_cast<std::uint16_t>(sel);
 			Length += static_cast<std::uint16_t>(dataLen);
 			return &Pointer[pos];
+		}
+
+		void FastAppend(const std::uint8_t* data, std::size_t len)
+		{
+			assert(!IsExternalBuffer);
+			assert(Length + len <= Capacity);
+			assert(len > 0);
+			assert(len <= 4);
+			*reinterpret_cast<std::uint32_t*>(&Pointer[Length]) =
+				*reinterpret_cast<const std::uint32_t*>(data);
+			Length += static_cast<std::uint16_t>(len);
 		}
 
 	public:

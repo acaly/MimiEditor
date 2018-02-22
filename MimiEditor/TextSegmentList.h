@@ -59,6 +59,9 @@ namespace Mimi
 			InsertAfter(GetLastSegment(), newSegment);
 		}
 
+		void FastAppend(TextSegment* newSegment);
+		void UpdataAllCount();
+
 	public:
 		void CheckChildrenIndexAndCount();
 	};
@@ -272,8 +275,11 @@ namespace Mimi
 		}
 		void UpdateChildrenIndex(std::size_t p = 0);
 
+		void RecursiveUpdateCount();
+
 	public:
 		void InsertElement(std::size_t pos, TextSegment* element);
+		void FastInsertElement(std::size_t pos, TextSegment* element);
 		TextSegment* RemoveElement(std::size_t pos);
 
 		void OnElementDataChanged()

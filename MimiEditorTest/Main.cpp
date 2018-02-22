@@ -8,6 +8,9 @@ MODULE_LIST(AllTests,
 	TestLineSeparation,
 	TestSegmentListModification);
 
+//TODO Organize other test functions.
+void TestReadLargeFile(const char* path);
+
 const char* ExecutableDirectory;
 
 static void SetupExecutableDirectory(int argc, char** argv)
@@ -37,15 +40,62 @@ static void SetupExecutableDirectory(int argc, char** argv)
 	}
 }
 
+struct ArgList
+{
+	struct Param1
+	{
+		bool HasValue;
+		std::string Value;
+
+		operator bool()
+		{
+			return HasValue;
+		}
+
+		const char* operator[] (int i)
+		{
+			if (i != 0) return {};
+			return Value.c_str();
+		}
+	};
+
+public:
+	ArgList(int argc, char** argv)
+		: Values(argv + 1, argv + argc)
+	{
+	}
+
+public:
+	std::vector<std::string> Values;
+
+public:
+	bool Has0(std::string val)
+	{
+		return std::find(Values.begin(), Values.end(), val) != Values.end();
+	}
+
+	Param1 Has1(std::string val)
+	{
+		auto pos = std::find(Values.begin(), Values.end(), val);
+		std::size_t i = pos - Values.begin();
+		if (i + 1 >= Values.size()) return { false };
+		return { true, pos[1] };
+	}
+};
+
 int main(int argc, char** argv)
 {
 	SetupExecutableDirectory(argc, argv);
 
-	//Args
-	std::unordered_set<std::string> args(argv + 1, argv + argc);
+	ArgList args(argc, argv);
 
-	bool onlyTestLast = args.find("--Last") != args.end();
-	if (onlyTestLast)
+	if (auto p = args.Has1("--TestReadLargeFile"))
+	{
+		TestReadLargeFile(p[0]);
+		return 0;
+	}
+
+	if (args.Has0("--Last"))
 	{
 		AllTests.erase(AllTests.begin(), AllTests.end() - 1);
 	}
@@ -54,7 +104,7 @@ int main(int argc, char** argv)
 	int ret = 0;
 	for (auto&& m : AllTests)
 	{
-		ret += m.Run();
+		ret |= m.Run();
 	}
 
 	return ret;
