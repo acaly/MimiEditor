@@ -60,9 +60,9 @@ namespace Mimi
 		SnapshotReader Reader;
 
 	public:
-		virtual std::uint32_t GetSize() override
+		virtual std::size_t GetSize() override
 		{
-			return static_cast<std::uint32_t>(Reader.GetSize());
+			return Reader.GetSize();
 		}
 
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override

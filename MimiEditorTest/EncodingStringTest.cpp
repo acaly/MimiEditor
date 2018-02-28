@@ -23,8 +23,8 @@ namespace
 		void TestBasic()
 		{
 			EXPECT(CodePageObj.IsValid());
-			EXPECT(CodePageObj.GetNormalWidth() > 0);
-			EXPECT(CodePageObj.GetNormalWidth() <= 4);
+			EXPECT(CodePageObj.GetNormalWidth() > 0u);
+			EXPECT(CodePageObj.GetNormalWidth() <= 4u);
 		}
 
 		void TestNormalChar(char ch)

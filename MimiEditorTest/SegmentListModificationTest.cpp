@@ -87,7 +87,7 @@ namespace
 			EXPECT(last);
 			std::size_t n = Doc->SegmentTree.GetLineCount();
 			std::size_t n2 = Doc->SegmentTree.GetElementCount();
-			EXPECT(n > 0);
+			EXPECT(n > 0u);
 			EXPECT(n == n2);
 			EXPECT(s->GetPreviousSegment() == nullptr);
 			while (s != last)
@@ -105,7 +105,7 @@ namespace
 			SnapshotReader r(snapshot.get());
 			char16_t buffer[3];
 			std::size_t checkRead;
-			int vectorIndex = 0;
+			std::size_t vectorIndex = 0;
 			while (r.GetPosition() < r.GetSize())
 			{
 				int id = Lines[vectorIndex++];

@@ -29,7 +29,7 @@ namespace Mimi
 	{
 	public:
 		virtual ~IFileReader() {}
-		virtual std::uint32_t GetSize() = 0; //TODO support 64 bit size_t
+		virtual std::size_t GetSize() = 0;
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) = 0;
 		virtual bool Skip(std::size_t num) = 0;
 		virtual bool Reset() = 0;
@@ -44,6 +44,7 @@ namespace Mimi
 		virtual void Skip(std::size_t num) = 0;
 		virtual void Reset() = 0;
 		virtual std::size_t GetPosition() = 0;
+		virtual bool Trim() = 0;
 	};
 
 	struct FileModifiedEvent

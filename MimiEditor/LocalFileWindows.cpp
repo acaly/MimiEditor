@@ -13,7 +13,7 @@ namespace
 	{
 	public:
 		HANDLE hFile;
-		DWORD Size;
+		std::uint64_t Size;
 
 	public:
 		virtual ~WindowsFileReader()
@@ -23,15 +23,22 @@ namespace
 		}
 
 	public:
-		virtual std::uint32_t GetSize() override
+		virtual std::size_t GetSize() override
 		{
-			return Size;
+			if (Size > SIZE_MAX) //TODO handle 0xFFFFFFFF on x86?
+			{
+				return SIZE_MAX;
+			}
+			return static_cast<std::size_t>(Size);
 		}
 
 		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override
 		{
 			bool ret;
-			assert(bufferLen <= MAXDWORD);
+			if (bufferLen > MAXDWORD)
+			{
+				return false;
+			}
 			DWORD toRead = static_cast<DWORD>(bufferLen);
 			DWORD totalRead = 0;
 			DWORD numReadValue;
@@ -51,19 +58,32 @@ namespace
 		virtual bool Skip(std::size_t num) override
 		{
 			assert(num <= Size);
-			return ::SetFilePointer(hFile, static_cast<DWORD>(num),
-				0, FILE_CURRENT) != INVALID_SET_FILE_POINTER;
+			LARGE_INTEGER li;
+			li.QuadPart = num;
+			return ::SetFilePointerEx(hFile, li, 0, FILE_CURRENT);
 		}
 
 		virtual bool Reset() override
 		{
-			return ::SetFilePointer(hFile, 0, 0, FILE_BEGIN) != INVALID_SET_FILE_POINTER;
+			LARGE_INTEGER li;
+			li.QuadPart = 0;
+			return ::SetFilePointerEx(hFile, li, 0, FILE_BEGIN);
 		}
 
 		virtual std::size_t GetPosition() override
 		{
-			//File size is less than 0xFFFFFFFF
-			return ::SetFilePointer(hFile, 0, 0, FILE_CURRENT);
+			LARGE_INTEGER li;
+			li.QuadPart = 0;
+			LARGE_INTEGER newPtr;
+			if (!::SetFilePointerEx(hFile, li, &newPtr, FILE_CURRENT))
+			{
+				return SIZE_MAX;
+			}
+			if (newPtr.HighPart != 0)
+			{
+				return SIZE_MAX; //TODO handle 0xFFFFFFFF on x86?
+			}
+			return static_cast<std::size_t>(newPtr.QuadPart);
 		}
 	};
 
@@ -107,15 +127,9 @@ namespace
 				::CloseHandle(h);
 				return nullptr;
 			}
-			if (size.HighPart != 0 || size.LowPart == INVALID_FILE_SIZE)
-			{
-				//TODO store or log the code?
-				::CloseHandle(h);
-				return nullptr;
-			}
 			WindowsFileReader* reader = new WindowsFileReader();
 			reader->hFile = h;
-			reader->Size = size.LowPart;
+			reader->Size = size.QuadPart;
 			return reader;
 		}
 
