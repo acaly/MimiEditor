@@ -161,6 +161,15 @@ DEFINE_MODULE(TestSegmentListModification)
 		}
 		t.CheckList();
 	},
+	CASE("Insert to beginning")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 10000; ++i)
+		{
+			t.Insert(0);
+		}
+		t.CheckList();
+	},
 	CASE("Insert randomly")
 	{
 		LineModificationTester t(lest_env);
@@ -202,6 +211,32 @@ DEFINE_MODULE(TestSegmentListModification)
 		}
 		t.CheckList();
 	},
+	CASE("Delete from beginning")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 10200; ++i)
+		{
+			t.Append();
+		}
+		for (int i = 0; i < 10000; ++i)
+		{
+			t.Delete(0);
+		}
+		t.CheckList();
+	},
+	CASE("Delete from end")
+	{
+		LineModificationTester t(lest_env);
+		for (int i = 0; i < 10200; ++i)
+		{
+			t.Append();
+		}
+		for (int i = 0; i < 10000; ++i)
+		{
+			t.Delete(10200 - i - 1);
+		}
+		t.CheckList();
+	},
 	CASE("Delete randomly")
 	{
 		LineModificationTester t(lest_env);
@@ -217,7 +252,4 @@ DEFINE_MODULE(TestSegmentListModification)
 		}
 		t.CheckList();
 	},
-	//TODO
-	//Insert to beginning
-	//Delete from beginning, from end and delete all.
 };
