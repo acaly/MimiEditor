@@ -120,6 +120,9 @@
     <ClInclude Include="File.h">
       <Filter>Header Files\Stream</Filter>
     </ClInclude>
+    <ClInclude Include="Result.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">

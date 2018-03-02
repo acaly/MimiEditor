@@ -65,24 +65,24 @@ namespace Mimi
 			return Reader.GetSize();
 		}
 
-		virtual bool Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override
+		virtual std::size_t GetPosition() override
+		{
+			return Reader.GetPosition();
+		}
+
+		virtual Result<> Read(std::uint8_t* buffer, std::size_t bufferLen, std::size_t* numRead) override
 		{
 			return Reader.Read(buffer, bufferLen, numRead);
 		}
 
-		virtual bool Skip(std::size_t num) override
+		virtual Result<> Skip(std::size_t num) override
 		{
 			return Reader.Skip(num);
 		}
 
-		virtual bool Reset() override
+		virtual Result<> Reset() override
 		{
 			return Reader.Reset();
-		}
-
-		virtual std::size_t GetPosition() override
-		{
-			return Reader.GetPosition();
 		}
 	};
 }
