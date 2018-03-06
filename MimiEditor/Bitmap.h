@@ -8,7 +8,10 @@ namespace Mimi
 	class Bitmap
 	{
 	public:
-		virtual BitmapData* GetData() = 0;
+		virtual ~Bitmap() {}
+		virtual BitmapData* CopyData() = 0;
 		virtual Renderer* CreateRenderer() = 0;
+
+		//TODO get size?
 	};
 }

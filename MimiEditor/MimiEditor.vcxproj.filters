@@ -123,6 +123,12 @@
     <ClInclude Include="Result.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Metrics.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderingStyles.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">

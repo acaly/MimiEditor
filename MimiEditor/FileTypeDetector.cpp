@@ -171,6 +171,7 @@ Mimi::FileTypeDetector::FileTypeDetector(std::unique_ptr<IFileReader> reader, Fi
 	Error = false;
 	TextReadEOS = false;
 	Detect();
+	//TODO use Result API when detecting.
 }
 
 bool Mimi::FileTypeDetector::ReadNextLine()

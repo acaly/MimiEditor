@@ -23,8 +23,8 @@ namespace Mimi
 	private:
 		PixelFormatImpl* Impl;
 		std::size_t Id;
+
 	public:
-		//TODO
 		std::size_t GetPixelSize()
 		{
 			return Impl->GetPixelSize();
@@ -39,8 +39,10 @@ namespace Mimi
 		{
 			return Impl->ToBGRA(palette, data, bgra, numPixel);
 		}
+
 	public:
-		//TODO more formats
 		static PixelFormat Empty; //No data
+		static PixelFormat R8; //One channel (8 byte int)
+		static PixelFormat BGRA8888; //4 channel (8 byte int)
 	};
 }
