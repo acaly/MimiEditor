@@ -3,6 +3,7 @@
 #include <cassert>
 #include <vector>
 #include "PixelFormat.h"
+#include "Result.h"
 
 namespace Mimi
 {
@@ -52,21 +53,20 @@ namespace Mimi
 		std::vector<RawBitmapData> BitmapList;
 		
 	public:
-		bool LoadFile(IFile* file)
+		Result<> LoadFile(IFile* file)
 		{
-			LoadData(CreateRawDataFromFile(file));
+			auto data = CreateRawDataFromFile(file);
+			if (data.Failed())
+			{
+				return data;
+			}
+			return LoadData(data);
 		}
 
-		bool LoadData(RawBitmapData data)
+		Result<> LoadData(RawBitmapData data)
 		{
-			if (data.Width == 0 || data.Height == 0)
-			{
-				assert(data.Pointer == nullptr);
-				assert(data.Palette == nullptr);
-				//Data loading failed.
-				//TODO error msg.
-				return false;
-			}
+			assert(data.Width != 0);
+			assert(data.Height != 0);
 			assert(data.Pointer);
 			assert(data.Stride >= data.Width * data.Format.GetPixelSize());
 			if (Width == 0)
@@ -77,18 +77,17 @@ namespace Mimi
 			}
 			if (Width * data.Height != Height * data.Width)
 			{
-				//TODO error msg.
-				return false;
+				return ErrorCodes::InvalidArgument;
 			}
 			for (auto&& i : BitmapList)
 			{
 				if (i.Width == data.Width)
 				{
-					//TODO error msg.
-					return false;
+					return ErrorCodes::InvalidArgument;
 				}
 			}
 			BitmapList.push_back(data);
+			return true;
 		}
 
 	public:
@@ -107,6 +106,18 @@ namespace Mimi
 		}
 
 	public:
-		static RawBitmapData CreateRawDataFromFile(IFile* file);
+		std::size_t GetRawDataCount()
+		{
+			return BitmapList.size();
+		}
+
+		RawBitmapData GetRawData(int index)
+		{
+			assert(index >= 0 && index < BitmapList.size());
+			return BitmapList[index];
+		}
+
+	public:
+		static Result<RawBitmapData> CreateRawDataFromFile(IFile* file);
 	};
 }

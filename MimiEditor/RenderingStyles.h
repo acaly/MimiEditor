@@ -2,7 +2,15 @@
 
 namespace Mimi
 {
-	//TODO dtor
-	using LineStyle = void*;
-	using FillStyle = void*;
+	class LineStyle
+	{
+	public:
+		virtual ~LineStyle() {}
+	};
+
+	class FillStyle
+	{
+	public:
+		virtual ~FillStyle() {}
+	};
 }

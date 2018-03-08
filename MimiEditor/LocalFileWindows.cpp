@@ -151,7 +151,7 @@ namespace
 			}
 			WindowsFileReader* reader = new WindowsFileReader();
 			reader->hFile = h;
-			reader->Size = size.QuadPart;
+			reader->Size = static_cast<std::size_t>(size.QuadPart);
 			return static_cast<IFileReader*>(reader);
 		}
 

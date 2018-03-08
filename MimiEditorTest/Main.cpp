@@ -10,6 +10,7 @@ MODULE_LIST(AllTests,
 
 //TODO Organize other test functions.
 void TestReadLargeFile(const char* path);
+void TestGDIWindow();
 
 const char* ExecutableDirectory;
 
@@ -92,6 +93,12 @@ int main(int argc, char** argv)
 	if (auto p = args.Has1("--TestReadLargeFile"))
 	{
 		TestReadLargeFile(p[0]);
+		return 0;
+	}
+
+	if (args.Has0("--TestGDIWindow"))
+	{
+		TestGDIWindow();
 		return 0;
 	}
 

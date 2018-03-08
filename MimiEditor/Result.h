@@ -96,6 +96,14 @@ namespace Mimi
 				Value = val;
 			}
 
+			template <typename TO>
+			Result(const Result<TO>& err)
+			{
+				assert(err.Failed());
+				ErrorPtr = err.ErrorPtr;
+				Value = T();
+			}
+
 			template <typename = std::enable_if<std::is_pointer<T>::value>::type>
 			T operator->()
 			{
@@ -116,6 +124,13 @@ namespace Mimi
 			Result(TE& error)
 			{
 				ErrorPtr = &error;
+			}
+
+			template <typename TO>
+			Result(const Result<TO>& err)
+			{
+				assert(err.Failed());
+				ErrorPtr = err.ErrorPtr;
 			}
 		};
 	}

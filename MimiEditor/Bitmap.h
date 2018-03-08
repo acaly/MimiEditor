@@ -1,4 +1,5 @@
 #pragma once
+#include "Result.h"
 
 namespace Mimi
 {
@@ -9,8 +10,8 @@ namespace Mimi
 	{
 	public:
 		virtual ~Bitmap() {}
-		virtual BitmapData* CopyData() = 0;
-		virtual Renderer* CreateRenderer() = 0;
+		virtual Result<BitmapData*> CopyData() = 0;
+		virtual Result<Renderer*> CreateRenderer() = 0;
 
 		//TODO get size?
 	};

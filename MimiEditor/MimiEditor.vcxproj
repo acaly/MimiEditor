@@ -26,6 +26,9 @@
     <ClInclude Include="Clock.h" />
     <ClInclude Include="CodePage.h" />
     <ClInclude Include="Font.h" />
+    <ClInclude Include="GDIBitmap.h" />
+    <ClInclude Include="GDIGraphicsDevice.h" />
+    <ClInclude Include="GDIWindow.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="Metrics.h" />
     <ClInclude Include="PixelFormat.h" />
@@ -56,6 +59,9 @@
     <ClCompile Include="CodePage.cpp" />
     <ClCompile Include="CodePageWindows.cpp" />
     <ClCompile Include="FileTypeDetector.cpp" />
+    <ClCompile Include="GDIBitmap.cpp" />
+    <ClCompile Include="GDIGraphicsDevice.cpp" />
+    <ClCompile Include="GDIWindow.cpp" />
     <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />
     <ClCompile Include="Snapshot.cpp" />

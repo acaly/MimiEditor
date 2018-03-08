@@ -34,6 +34,12 @@
     <Filter Include="Header Files\Graphics">
       <UniqueIdentifier>{fb0b548e-dc01-4f2c-906d-7bdd484b7b69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Graphics.GDI">
+      <UniqueIdentifier>{4a56ea39-8513-444a-a7a3-7cd3a506eed7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Graphics.GDI">
+      <UniqueIdentifier>{4ac5a804-3b54-43f2-9591-5ba2d8de1bcc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextSegment.h">
@@ -129,6 +135,15 @@
     <ClInclude Include="RenderingStyles.h">
       <Filter>Header Files\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="GDIGraphicsDevice.h">
+      <Filter>Header Files\Graphics.GDI</Filter>
+    </ClInclude>
+    <ClInclude Include="GDIBitmap.h">
+      <Filter>Header Files\Graphics.GDI</Filter>
+    </ClInclude>
+    <ClInclude Include="GDIWindow.h">
+      <Filter>Header Files\Graphics.GDI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">
@@ -169,6 +184,15 @@
     </ClCompile>
     <ClCompile Include="Snapshot.cpp">
       <Filter>Source Files\Storage</Filter>
+    </ClCompile>
+    <ClCompile Include="GDIGraphicsDevice.cpp">
+      <Filter>Source Files\Graphics.GDI</Filter>
+    </ClCompile>
+    <ClCompile Include="GDIBitmap.cpp">
+      <Filter>Source Files\Graphics.GDI</Filter>
+    </ClCompile>
+    <ClCompile Include="GDIWindow.cpp">
+      <Filter>Source Files\Graphics.GDI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
