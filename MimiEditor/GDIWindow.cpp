@@ -119,7 +119,7 @@ LRESULT Mimi::GDI::GDIWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 
-		GDIRenderer r(hdc, ps.rcPaint);
+		GDIRenderer r(hWnd, hdc, ps.rcPaint);
 		w->OnPaint(&r);
 
 		EndPaint(hWnd, &ps);

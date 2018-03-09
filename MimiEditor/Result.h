@@ -42,23 +42,23 @@ namespace Mimi
 		{
 			const Error* ErrorPtr;
 
-			bool Success()
+			bool Success() const
 			{
 				return !ErrorPtr;
 			}
 
-			bool Failed()
+			bool Failed() const
 			{
 				return ErrorPtr;
 			}
 
-			String GetErrorMessage()
+			String GetErrorMessage() const
 			{
 				assert(ErrorPtr);
 				return ErrorPtr->GetErrorMessage();
 			}
 
-			const char* GetErrorId()
+			const char* GetErrorId() const
 			{
 				if (ErrorPtr)
 				{
@@ -67,7 +67,7 @@ namespace Mimi
 				return nullptr;
 			}
 
-			bool IsError(const char* id)
+			bool IsError(const char* id) const
 			{
 				return ErrorPtr && std::strcmp(GetErrorId(), id) == 0;
 			}
@@ -78,7 +78,7 @@ namespace Mimi
 		{
 			T Value;
 
-			operator T()
+			operator T() const
 			{
 				return Value;
 			}
@@ -90,7 +90,7 @@ namespace Mimi
 				Value = T();
 			}
 
-			Result(T&& val)
+			Result(const T& val)
 			{
 				ErrorPtr = nullptr;
 				Value = val;

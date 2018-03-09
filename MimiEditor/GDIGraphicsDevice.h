@@ -11,7 +11,7 @@ namespace Mimi
 			virtual ~GDIDevice();
 
 		public:
-			virtual Result<Bitmap*> CreateBitmap(const BitmapData* data) override;
+			virtual Result<Bitmap*> CreateBitmap(BitmapData* data) override;
 			virtual Result<Bitmap*> CreateBuffer(Renderer* compatible,
 				std::size_t w, std::size_t h) override;
 			virtual Result<LineStyle*> CreateLineStyle(Color4I color, ScreenSize sz) override;

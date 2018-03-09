@@ -29,7 +29,8 @@ namespace Mimi
 	class PixelFormatImpl
 	{
 	public:
-		virtual std::size_t GetPixelSize() = 0;
+		virtual bool IsSupported() = 0;
+		virtual std::size_t GetPixelBits() = 0;
 		virtual bool FromBGRA(PaletteData palette, const Color4I* bgra, void* data, std::size_t numPixel) = 0;
 		virtual bool ToBGRA(PaletteData palette, const void* data, Color4I* bgra, std::size_t numPixel) = 0;
 	};
@@ -38,12 +39,16 @@ namespace Mimi
 	{
 	private:
 		PixelFormatImpl* Impl;
-		std::size_t Id;
 
 	public:
-		std::size_t GetPixelSize()
+		bool IsSupported()
 		{
-			return Impl->GetPixelSize();
+			return Impl->IsSupported();
+		}
+
+		std::size_t GetPixelBits()
+		{
+			return Impl->GetPixelBits();
 		}
 
 		bool FromBGRA(PaletteData palette, const Color4I* bgra, void* data, std::size_t numPixel)
@@ -60,5 +65,7 @@ namespace Mimi
 		static PixelFormat Empty; //No data
 		static PixelFormat R8; //One channel (8 byte int)
 		static PixelFormat BGRA8888; //4 channel (8 byte int)
+
+		static PixelFormat Default; //One supported format by the platform (may be used in conversion).
 	};
 }

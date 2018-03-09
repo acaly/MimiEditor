@@ -68,7 +68,7 @@ namespace Mimi
 			assert(data.Width != 0);
 			assert(data.Height != 0);
 			assert(data.Pointer);
-			assert(data.Stride >= data.Width * data.Format.GetPixelSize());
+			assert(data.Stride >= data.Width * data.Format.GetPixelBits());
 			if (Width == 0)
 			{
 				assert(Height == 0);
@@ -111,7 +111,7 @@ namespace Mimi
 			return BitmapList.size();
 		}
 
-		RawBitmapData GetRawData(int index)
+		RawBitmapData GetRawData(std::size_t index)
 		{
 			assert(index >= 0 && index < BitmapList.size());
 			return BitmapList[index];

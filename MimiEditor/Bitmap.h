@@ -10,7 +10,7 @@ namespace Mimi
 	{
 	public:
 		virtual ~Bitmap() {}
-		virtual Result<BitmapData*> CopyData() = 0;
+		virtual Result<BitmapData*> CopyData() = 0; //TODO really needed?
 		virtual Result<Renderer*> CreateRenderer() = 0;
 
 		//TODO get size?
