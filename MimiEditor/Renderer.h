@@ -2,6 +2,7 @@
 #include <cstddef>
 #include "Metrics.h"
 #include "RenderingStyles.h"
+#include "PixelFormat.h"
 
 namespace Mimi
 {
@@ -16,6 +17,8 @@ namespace Mimi
 		virtual ~Renderer() {}
 
 		virtual float GetResolution() = 0;
+
+		virtual void Clear(Color4I color) = 0;
 
 		virtual StackCheck PushClip(RectS clip) = 0;
 		virtual void PopClip(StackCheck id) = 0;

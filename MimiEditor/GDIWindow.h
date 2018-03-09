@@ -1,27 +1,30 @@
 #pragma once
 #include "EventHandler.h"
+#include "Renderer.h"
 #include <Windows.h>
 
 namespace Mimi
 {
+	class AbstractControl;
+
 	namespace GDI
 	{
 		class GDIWindow
 		{
 		public:
-			GDIWindow() {}
+			GDIWindow(AbstractControl* handler)
+				: ControlHandler(handler)
+			{
+			}
+
 			virtual ~GDIWindow() {} //TODO check window has been destroyed
 
 		private:
 			HWND HWnd;
 			SIZE Size;
+			AbstractControl* ControlHandler;
 
 		public:
-			HWND GetHWnd()
-			{
-				return HWnd;
-			}
-
 			SIZE GetSize()
 			{
 				return Size;
@@ -30,14 +33,14 @@ namespace Mimi
 		public:
 			void CreateControlWindow(HWND parent, RECT position);
 
-		public:
-			virtual void OnDestroyed() = 0;
-			virtual void OnPaint(HDC hdc) = 0;
+		protected:
+			void OnDestroyed();
+			void OnPaint(Renderer* renderer);
 
-		public:
+		private:
 			static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-		public:
+		private:
 			static GDIWindow* GetGDIWindow(HWND hWnd);
 
 		public:

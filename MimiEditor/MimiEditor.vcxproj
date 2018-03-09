@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AbstractControl.h" />
     <ClInclude Include="BinaryReader.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="BitmapData.h" />
@@ -28,6 +29,7 @@
     <ClInclude Include="Font.h" />
     <ClInclude Include="GDIBitmap.h" />
     <ClInclude Include="GDIGraphicsDevice.h" />
+    <ClInclude Include="GDIRenderer.h" />
     <ClInclude Include="GDIWindow.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="Metrics.h" />
@@ -61,6 +63,7 @@
     <ClCompile Include="FileTypeDetector.cpp" />
     <ClCompile Include="GDIBitmap.cpp" />
     <ClCompile Include="GDIGraphicsDevice.cpp" />
+    <ClCompile Include="GDIRenderer.cpp" />
     <ClCompile Include="GDIWindow.cpp" />
     <ClCompile Include="LocalFileWindows.cpp" />
     <ClCompile Include="ModificationTracer.cpp" />

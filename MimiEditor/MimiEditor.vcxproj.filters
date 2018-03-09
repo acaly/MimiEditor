@@ -40,6 +40,9 @@
     <Filter Include="Header Files\Graphics.GDI">
       <UniqueIdentifier>{4ac5a804-3b54-43f2-9591-5ba2d8de1bcc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Wrapper">
+      <UniqueIdentifier>{b5429c0b-02b8-4b99-afb7-f353d6d44f5d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TextSegment.h">
@@ -144,6 +147,12 @@
     <ClInclude Include="GDIWindow.h">
       <Filter>Header Files\Graphics.GDI</Filter>
     </ClInclude>
+    <ClInclude Include="AbstractControl.h">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="GDIRenderer.h">
+      <Filter>Header Files\Graphics.GDI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ModificationTracer.cpp">
@@ -192,6 +201,9 @@
       <Filter>Source Files\Graphics.GDI</Filter>
     </ClCompile>
     <ClCompile Include="GDIWindow.cpp">
+      <Filter>Source Files\Graphics.GDI</Filter>
+    </ClCompile>
+    <ClCompile Include="GDIRenderer.cpp">
       <Filter>Source Files\Graphics.GDI</Filter>
     </ClCompile>
   </ItemGroup>

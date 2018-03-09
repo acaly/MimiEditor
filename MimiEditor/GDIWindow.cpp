@@ -1,4 +1,6 @@
 #include "GDIWindow.h"
+#include "GDIRenderer.h"
+#include "AbstractControl.h"
 
 #pragma comment(linker,"\"/manifestdependency:type='win32' \
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
@@ -56,6 +58,7 @@ namespace
 		wc.hInstance = AppInstance;
 		wc.lpszClassName = WindowClassName;
 		wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+		wc.cbWndExtra = sizeof(LONG_PTR) * 2;
 
 		RegisterClass(&wc);
 
@@ -86,10 +89,29 @@ void Mimi::GDI::GDIWindow::CreateControlWindow(HWND parent, RECT position)
 		position.left, position.top, Size.cx, Size.cy,
 		parent,
 		NULL, AppInstance, NULL);
+	SetWindowLongPtr(HWnd, 0, reinterpret_cast<LONG_PTR>(AppInstance));
+	SetWindowLongPtr(HWnd, sizeof(LONG_PTR), reinterpret_cast<LONG_PTR>(this));
+
+	ControlHandler->OnCreated();
+}
+
+void Mimi::GDI::GDIWindow::OnDestroyed()
+{
+	ControlHandler->OnDestroyed();
+}
+
+void Mimi::GDI::GDIWindow::OnPaint(Renderer* renderer)
+{
+	ControlHandler->OnPaint(renderer);
 }
 
 LRESULT Mimi::GDI::GDIWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	GDIWindow* w = GetGDIWindow(hWnd);
+	if (w == nullptr)
+	{
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	}
 	switch (uMsg)
 	{
 	case WM_PAINT:
@@ -97,10 +119,8 @@ LRESULT Mimi::GDI::GDIWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 
-		RECT range = ps.rcPaint;
-		auto hBrush = CreateSolidBrush(RGB(0, 128, 255));
-		FillRect(hdc, &range, hBrush);
-		DeleteObject(hBrush);
+		GDIRenderer r(hdc, ps.rcPaint);
+		w->OnPaint(&r);
 
 		EndPaint(hWnd, &ps);
 		return 0;
@@ -109,6 +129,15 @@ LRESULT Mimi::GDI::GDIWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	default:
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
+}
+
+Mimi::GDI::GDIWindow* Mimi::GDI::GDIWindow::GetGDIWindow(HWND hWnd)
+{
+	if (reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hWnd, 0)) == AppInstance)
+	{
+		return reinterpret_cast<GDIWindow*>(GetWindowLongPtr(hWnd, sizeof(LONG_PTR)));
+	}
+	return nullptr;
 }
 
 void Mimi::GDI::GDIWindow::RegisterWindowClass()
@@ -136,15 +165,22 @@ void Mimi::GDI::GDIWindow::RunTestWindow(GDIWindow* window)
 
 	HWND hWndWindow = CreateWindowEx(
 		0, TestWindowWindowClassName, L"Mimi GDI Control Test",
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPED | WS_SYSMENU,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL,
 		NULL, AppInstance, NULL);
 
-	window->CreateControlWindow(hWndWindow, { 0, 0, 200, 200 });
+	RECT clientRect;
+
+	if (!::GetClientRect(hWndWindow, &clientRect))
+	{
+		clientRect = { 0, 0, 200, 200 };
+	}
+
+	window->CreateControlWindow(hWndWindow, clientRect);
 
 	ShowWindow(hWndWindow, SW_SHOW);
-	SetFocus(window->GetHWnd());
+	SetFocus(window->HWnd);
 
 	RunDefaultMessageLoop();
 }

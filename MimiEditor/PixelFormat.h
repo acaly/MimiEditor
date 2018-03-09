@@ -1,21 +1,37 @@
 #pragma once
+#include <cstdint>
 #include <cstddef>
 
 namespace Mimi
 {
-	struct Color4F
+	struct Color4I
 	{
-		float A, R, G, B;
+		std::uint8_t A, R, G, B;
+
+		Color4I() = default;
+
+		Color4I(int r, int g, int b)
+			: Color4I(255, r, g, b)
+		{
+		}
+
+		Color4I(int a, int r, int g, int b)
+		{
+			A = static_cast<std::uint8_t>(a);
+			R = static_cast<std::uint8_t>(r);
+			G = static_cast<std::uint8_t>(g);
+			B = static_cast<std::uint8_t>(b);
+		}
 	};
 
-	typedef  const Color4F* PaletteData;
+	typedef const Color4I* PaletteData;
 
 	class PixelFormatImpl
 	{
 	public:
 		virtual std::size_t GetPixelSize() = 0;
-		virtual bool FromBGRA(PaletteData palette, const Color4F* bgra, void* data, std::size_t numPixel) = 0;
-		virtual bool ToBGRA(PaletteData palette, const void* data, Color4F* bgra, std::size_t numPixel) = 0;
+		virtual bool FromBGRA(PaletteData palette, const Color4I* bgra, void* data, std::size_t numPixel) = 0;
+		virtual bool ToBGRA(PaletteData palette, const void* data, Color4I* bgra, std::size_t numPixel) = 0;
 	};
 
 	struct PixelFormat
@@ -30,12 +46,12 @@ namespace Mimi
 			return Impl->GetPixelSize();
 		}
 
-		bool FromBGRA(PaletteData palette, const Color4F* bgra, void* data, std::size_t numPixel)
+		bool FromBGRA(PaletteData palette, const Color4I* bgra, void* data, std::size_t numPixel)
 		{
 			return Impl->FromBGRA(palette, bgra, data, numPixel);
 		}
 
-		bool ToBGRA(PaletteData palette, const void* data, Color4F* bgra, std::size_t numPixel)
+		bool ToBGRA(PaletteData palette, const void* data, Color4I* bgra, std::size_t numPixel)
 		{
 			return Impl->ToBGRA(palette, data, bgra, numPixel);
 		}

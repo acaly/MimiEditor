@@ -20,8 +20,8 @@ namespace Mimi
 	public:
 		virtual Result<Bitmap*> CreateBitmap(const BitmapData* data) = 0;
 		virtual Result<Bitmap*> CreateBuffer(Renderer* compatible, std::size_t w, std::size_t h) = 0;
-		virtual Result<LineStyle*> CreateLineStyle(Color4F color, ScreenSize sz) = 0;
-		virtual Result<FillStyle*> CreateFillStyle(Color4F color) = 0;
+		virtual Result<LineStyle*> CreateLineStyle(Color4I color, ScreenSize sz) = 0;
+		virtual Result<FillStyle*> CreateFillStyle(Color4I color) = 0;
 		virtual Result<Font*> CreateFont(String fontface, ScreenSize sz) = 0;
 
 	public:
